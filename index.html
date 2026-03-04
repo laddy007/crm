@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.1'; // bump při každém nasazení
+const APP_VERSION = '1.3.2'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -938,9 +938,11 @@ async function saveTask() {
   S.taskId=id;
   if(localStorage.getItem('gcal_enabled')) {
     try {
-      const gcalEventId=await gcalCreateOrUpdateEvent(savedItem);
-      if(gcalEventId && gcalEventId!==savedItem.gcalEventId)
-        await DB.put('tasks',{...savedItem,gcalEventId});
+      const gcalIds=await gcalCreateOrUpdateEvent(savedItem);
+      const upd={};
+      if('gcalEventId' in gcalIds && gcalIds.gcalEventId!==savedItem.gcalEventId) upd.gcalEventId=gcalIds.gcalEventId;
+      if('gcalNextServiceEventId' in gcalIds && gcalIds.gcalNextServiceEventId!==savedItem.gcalNextServiceEventId) upd.gcalNextServiceEventId=gcalIds.gcalNextServiceEventId;
+      if(Object.keys(upd).length) await DB.put('tasks',{...savedItem,...upd});
     } catch(e){console.error('GCal sync error:',e);gcalPendingAdd({op:'upsert',taskId:id});toast('⚠ Google Kalendář: '+((e?.message||'chyba').slice(0,60)));}
   }
   toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
@@ -948,7 +950,10 @@ async function saveTask() {
 async function deleteTask(id) {
   if(!confirm('Smazat zakázku?')) return;
   const t=await DB.get('tasks',id); for(const p of(t?.photos||[])) await OPFS.del(p);
-  if(localStorage.getItem('gcal_enabled') && t?.gcalEventId) await gcalDeleteEvent(t.gcalEventId);
+  if(localStorage.getItem('gcal_enabled')) {
+    if(t?.gcalEventId) await gcalDeleteEvent(t.gcalEventId);
+    if(t?.gcalNextServiceEventId) await gcalDeleteEvent(t.gcalNextServiceEventId);
+  }
   await DB.del('tasks',id); toast('Zakázka smazána'); nav('device-detail',{taskId:null});
 }
 
@@ -1530,21 +1535,65 @@ function taskToGCalEvent(task,cust,loc,dev) {
   };
 }
 
+function taskToGCalNextServiceEvent(task,cust,loc,dev) {
+  const custName=cust?custDisplayName(cust):'';
+  const title=['🔧 Příští servis',custName,task.title||''].filter(Boolean).join(' – ');
+  const desc=[
+    custName?'Zákazník: '+custName:'',
+    loc?'Lokace: '+(loc.address||''):'',
+    dev?'Zařízení: '+(dev.name||dev.type||''):'',
+    task.repairType?'Typ: '+task.repairType:'',
+  ].filter(Boolean).join('\n');
+  const endDate=new Date(task.nextService); endDate.setDate(endDate.getDate()+1);
+  const endStr=endDate.toISOString().split('T')[0];
+  return {
+    summary:title,
+    description:desc,
+    start:{date:task.nextService},
+    end:{date:endStr},
+    extendedProperties:{private:{kotlocrm_next_service_id:String(task.id||'')}},
+  };
+}
+
+// Upsert pomocník – při 404 (event smazán na GCal straně) vytvoří nový
+async function _gcalUpsertEvent(token,eventId,eventBody) {
+  const base='https://www.googleapis.com/calendar/v3/calendars/primary/events';
+  if(eventId) {
+    try {
+      const res=await _driveReq(token,'PATCH',`${base}/${eventId}`,JSON.stringify(eventBody),'application/json');
+      return (await res.json()).id||null;
+    } catch(e) {
+      if(String(e.message).includes('404')||String(e.message).includes('Resource has been deleted')) {
+        const res=await _driveReq(token,'POST',base,JSON.stringify(eventBody),'application/json');
+        return (await res.json()).id||null;
+      }
+      throw e;
+    }
+  }
+  const res=await _driveReq(token,'POST',base,JSON.stringify(eventBody),'application/json');
+  return (await res.json()).id||null;
+}
+
+// Vrací { gcalEventId?, gcalNextServiceEventId? }
 async function gcalCreateOrUpdateEvent(task) {
-  if(!task.date) return null;
+  if(!task.date && !task.nextService) return {};
   const token=await getDriveToken();
   const [cust,loc,dev]=await Promise.all([
     task.customerId?DB.get('customers',task.customerId):Promise.resolve(null),
     task.locationId?DB.get('locations',task.locationId):Promise.resolve(null),
     task.deviceId?DB.get('devices',task.deviceId):Promise.resolve(null),
   ]);
-  const event=taskToGCalEvent(task,cust,loc,dev);
-  const base='https://www.googleapis.com/calendar/v3/calendars/primary/events';
-  const res=task.gcalEventId
-    ?await _driveReq(token,'PATCH',`${base}/${task.gcalEventId}`,JSON.stringify(event),'application/json')
-    :await _driveReq(token,'POST',base,JSON.stringify(event),'application/json');
-  const data=await res.json();
-  return data.id||null;
+  const result={};
+  if(task.date) {
+    result.gcalEventId=await _gcalUpsertEvent(token,task.gcalEventId,taskToGCalEvent(task,cust,loc,dev));
+  }
+  if(task.nextService) {
+    result.gcalNextServiceEventId=await _gcalUpsertEvent(token,task.gcalNextServiceEventId,taskToGCalNextServiceEvent(task,cust,loc,dev));
+  } else if(task.gcalNextServiceEventId) {
+    try{await _gcalDeleteDirect(token,task.gcalNextServiceEventId);}catch(e){}
+    result.gcalNextServiceEventId=null;
+  }
+  return result;
 }
 
 // Přímé smazání bez fallbacku do fronty (používá jen gcalProcessQueue)
@@ -1579,9 +1628,11 @@ async function gcalProcessQueue() {
       } else if(entry.op==='upsert'){
         const task=await DB.get('tasks',entry.taskId);
         if(!task){done.add(i);continue;} // task mezitím smazán, přeskočit
-        const gcalEventId=await gcalCreateOrUpdateEvent(task);
-        if(gcalEventId && gcalEventId!==task.gcalEventId)
-          await DB.put('tasks',{...task,gcalEventId});
+        const gcalIds=await gcalCreateOrUpdateEvent(task);
+        const upd={};
+        if('gcalEventId' in gcalIds && gcalIds.gcalEventId!==task.gcalEventId) upd.gcalEventId=gcalIds.gcalEventId;
+        if('gcalNextServiceEventId' in gcalIds && gcalIds.gcalNextServiceEventId!==task.gcalNextServiceEventId) upd.gcalNextServiceEventId=gcalIds.gcalNextServiceEventId;
+        if(Object.keys(upd).length) await DB.put('tasks',{...task,...upd});
         done.add(i);
       }
     }catch(e){/* nechat ve frontě */}
