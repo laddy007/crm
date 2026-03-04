@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.5'; // bump při každém nasazení
+const APP_VERSION = '1.3.6'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -1419,6 +1419,7 @@ function gdriveSetupSave(doSync) {
   localStorage.setItem('gdrive_client_id',cid);
   if(email) localStorage.setItem('gdrive_account_email',email); else localStorage.removeItem('gdrive_account_email');
   localStorage.removeItem('gdrive_folder_id'); // reset folder on client change
+  localStorage.removeItem('gdrive_token');      // reset token cache
   _driveTokenCache=null; _driveTokenClient=null; // force re-auth with new client/account
   document.getElementById('gdrive-setup')?.remove();
   toast('✓ Client ID uloženo');
@@ -1428,6 +1429,18 @@ function gdriveSetupSave(doSync) {
 // ── Token cache ──────────────────────────────────────
 let _driveTokenCache=null; // { value, expiresAt }
 let _driveTokenClient=null;
+
+function _tokenSave(value,expiresAt){
+  try{localStorage.setItem('gdrive_token',JSON.stringify({value,expiresAt}));}catch(e){}
+}
+function _tokenLoad(){
+  try{
+    const s=localStorage.getItem('gdrive_token'); if(!s) return null;
+    const c=JSON.parse(s);
+    if(c?.expiresAt>Date.now()+60000) return c;
+  }catch(e){}
+  return null;
+}
 
 function _getDriveTokenClient() {
   if(_driveTokenClient) return _driveTokenClient;
@@ -1443,18 +1456,41 @@ function _getDriveTokenClient() {
 }
 
 function getDriveToken() {
+  // 1) paměťová cache
   if(_driveTokenCache && _driveTokenCache.expiresAt>Date.now()+60000)
     return Promise.resolve(_driveTokenCache.value);
+  // 2) localStorage cache (přežije reload stránky)
+  const stored=_tokenLoad();
+  if(stored){_driveTokenCache=stored; return Promise.resolve(stored.value);}
+  // 3) nový token od GIS
   return new Promise((resolve,reject)=>{
     const client=_getDriveTokenClient();
     if(!client){reject(new Error('Chybí Client ID'));return;}
     client.callback=(resp)=>{
       if(resp.error){reject(new Error(resp.error));return;}
-      _driveTokenCache={value:resp.access_token,expiresAt:Date.now()+(resp.expires_in||3600)*1000};
-      resolve(_driveTokenCache.value);
+      const expiresAt=Date.now()+(resp.expires_in||3600)*1000;
+      _driveTokenCache={value:resp.access_token,expiresAt};
+      _tokenSave(resp.access_token,expiresAt);
+      resolve(resp.access_token);
     };
     client.requestAccessToken({prompt:''});
   });
+}
+
+// tichý pre-warm tokenu na pozadí (po načtení GIS) — zamezí popupu při první akci
+function _driveTokenWarmup(){
+  if(!gdriveClientId()) return;
+  if(_tokenLoad()) return; // ještě platný, není třeba
+  try{
+    const client=_getDriveTokenClient(); if(!client) return;
+    client.callback=(resp)=>{
+      if(resp.error||!resp.access_token) return;
+      const expiresAt=Date.now()+(resp.expires_in||3600)*1000;
+      _driveTokenCache={value:resp.access_token,expiresAt};
+      _tokenSave(resp.access_token,expiresAt);
+    };
+    client.requestAccessToken({prompt:''});
+  }catch(e){}
 }
 
 // ── Drive API helpers ────────────────────────────────
@@ -1834,6 +1870,11 @@ async function syncFromDrive() {
   }catch(e){console.error('Init:',e);}
   document.getElementById('loading').style.display='none';
   await render();
+  // Při startu: tichý pre-warm tokenu (přihlásí na pozadí bez popupu, pokud GIS cookie platí)
+  if(gdriveClientId()) setTimeout(()=>{
+    if(typeof google!=='undefined'&&google?.accounts?.oauth2) _driveTokenWarmup();
+    else document.querySelector('script[src*="gsi"]')?.addEventListener('load',_driveTokenWarmup,{once:true});
+  },1500);
   // Při startu: pokud jsme online a máme čekající GCal operace (z minulé session), zpracujeme je
   if(navigator.onLine && localStorage.getItem('gcal_enabled') && _gcalPending().length)
     setTimeout(gcalProcessQueue, 3000);
