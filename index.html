@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.4'; // bump při každém nasazení
+const APP_VERSION = '1.3.5'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -899,7 +899,7 @@ async function renderTaskForm() {
       <input class="form-input" id="f-title" type="text" value="${esc(t.title||'')}" placeholder="Výměna hořáku, revize…"></div>
     <div class="form-row">
       <div class="form-group"><div class="form-label">Datum *</div>
-        <input class="form-input" id="f-date" type="datetime-local" value="${(t.date?.length===10?t.date+'T00:00':t.date)||today}"></div>
+        <input class="form-input" id="f-date" type="datetime-local" step="600" value="${(t.date?.length===10?t.date+'T00:00':t.date)||today}"></div>
       <div class="form-group"><div class="form-label">Stav</div>
         <select class="form-select" id="f-status">
           ${statuses.map(s=>`<option value="${s.v}" ${(t.status||'nova')===s.v?'selected':''}>${s.l}</option>`).join('')}
@@ -918,7 +918,7 @@ async function renderTaskForm() {
       <div class="form-group"><div class="form-label">Cena (Kč)</div>
         <input class="form-input" id="f-price" type="number" value="${esc(t.price||'')}" placeholder="0"></div>
       <div class="form-group"><div class="form-label">Příští servis</div>
-        <input class="form-input" id="f-nextService" type="datetime-local" value="${t.nextService?.length===10?t.nextService+'T00:00':(t.nextService||'')}"></div>
+        <input class="form-input" id="f-nextService" type="datetime-local" step="600" value="${t.nextService?.length===10?t.nextService+'T00:00':(t.nextService||'')}"></div>
     </div>
     <div class="form-group"><div class="form-label">Poznámky</div>
       <textarea class="form-textarea" id="f-notes">${esc(t.notes||'')}</textarea></div>
