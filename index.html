@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.2'; // bump při každém nasazení
+const APP_VERSION = '1.3.3'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -370,7 +370,13 @@ function bottomNav() {
 // ══════════════════════════════════════════════════════
 
 function esc(s) { return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(d) { return d?new Date(d).toLocaleDateString('cs-CZ'):'—'; }
+function fmtDate(d) {
+  if(!d) return '—';
+  const dt=new Date(d);
+  const date=dt.toLocaleDateString('cs-CZ');
+  const h=dt.getHours(),m=dt.getMinutes();
+  return (h||m)?date+' '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'):date;
+}
 function fmtPrice(p) { return p?Number(p).toLocaleString('cs-CZ')+'&nbsp;Kč':'—'; }
 const STATUS = { nova:'Nová', probiha:'Probíhá', dokoncena:'Dokončena', ceka:'Čeká na díl' };
 
@@ -880,7 +886,7 @@ async function openTaskForm(id) {
 }
 async function renderTaskForm() {
   const isEdit=!!S.taskId, t=isEdit?(await DB.get('tasks',S.taskId)||{}):{};
-  const today=new Date().toISOString().split('T')[0];
+  const today=new Date().toLocaleString('sv-SE',{timeZone:'Europe/Prague'}).replace(' ','T').slice(0,16);
   const statuses=[{v:'nova',l:'Nová'},{v:'probiha',l:'Probíhá'},{v:'dokoncena',l:'Dokončena'},{v:'ceka',l:'Čeká na díl'}];
   const repairTypes=['Pravidelná revize','Výměna dílu','Oprava poruchy','Uvedení do provozu','Čištění','Jiné'];
   return `<div class="header">
@@ -893,7 +899,7 @@ async function renderTaskForm() {
       <input class="form-input" id="f-title" type="text" value="${esc(t.title||'')}" placeholder="Výměna hořáku, revize…"></div>
     <div class="form-row">
       <div class="form-group"><div class="form-label">Datum *</div>
-        <input class="form-input" id="f-date" type="date" value="${t.date||today}"></div>
+        <input class="form-input" id="f-date" type="datetime-local" value="${(t.date?.length===10?t.date+'T00:00':t.date)||today}"></div>
       <div class="form-group"><div class="form-label">Stav</div>
         <select class="form-select" id="f-status">
           ${statuses.map(s=>`<option value="${s.v}" ${(t.status||'nova')===s.v?'selected':''}>${s.l}</option>`).join('')}
@@ -912,7 +918,7 @@ async function renderTaskForm() {
       <div class="form-group"><div class="form-label">Cena (Kč)</div>
         <input class="form-input" id="f-price" type="number" value="${esc(t.price||'')}" placeholder="0"></div>
       <div class="form-group"><div class="form-label">Příští servis</div>
-        <input class="form-input" id="f-nextService" type="date" value="${t.nextService||''}"></div>
+        <input class="form-input" id="f-nextService" type="datetime-local" value="${t.nextService?.length===10?t.nextService+'T00:00':(t.nextService||'')}"></div>
     </div>
     <div class="form-group"><div class="form-label">Poznámky</div>
       <textarea class="form-textarea" id="f-notes">${esc(t.notes||'')}</textarea></div>
@@ -992,8 +998,9 @@ async function renderCalendar() {
   const dateMap = {};
   for (const t of filtered) {
     if (!t.date) continue;
-    if (!dateMap[t.date]) dateMap[t.date] = [];
-    dateMap[t.date].push(t);
+    const dk=t.date.slice(0,10);
+    if (!dateMap[dk]) dateMap[dk] = [];
+    dateMap[dk].push(t);
   }
 
   const year=c.year, month=c.month;
@@ -1024,9 +1031,9 @@ async function renderCalendar() {
   let listTasks = c.selectedDate ? (dateMap[c.selectedDate]||[]) : filtered;
   listTasks = [...listTasks].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
 
-  const now = todayStr;
-  const upcoming = listTasks.filter(t=>t.date>=now);
-  const past     = listTasks.filter(t=>t.date<now).reverse();
+  const nowDt=new Date().toLocaleString('sv-SE',{timeZone:'Europe/Prague'}).replace(' ','T').slice(0,16);
+  const upcoming = listTasks.filter(t=>t.date>=nowDt);
+  const past     = listTasks.filter(t=>t.date<nowDt).reverse();
 
   function taskCard(t) {
     const st=t.status||'nova';
@@ -1524,13 +1531,11 @@ function taskToGCalEvent(task,cust,loc,dev) {
     task.price?'Cena: '+task.price+' Kč':'',
     task.notes?'Poznámky: '+task.notes:'',
   ].filter(Boolean).join('\n');
-  const endDate=new Date(task.date); endDate.setDate(endDate.getDate()+1);
-  const endStr=endDate.toISOString().split('T')[0];
+  const {start,end}=_gcalStartEnd(task.date);
   return {
     summary:title,
     description:desc,
-    start:{date:task.date},
-    end:{date:endStr},
+    start,end,
     extendedProperties:{private:{kotlocrm_task_id:String(task.id||'')}},
   };
 }
@@ -1544,15 +1549,24 @@ function taskToGCalNextServiceEvent(task,cust,loc,dev) {
     dev?'Zařízení: '+(dev.name||dev.type||''):'',
     task.repairType?'Typ: '+task.repairType:'',
   ].filter(Boolean).join('\n');
-  const endDate=new Date(task.nextService); endDate.setDate(endDate.getDate()+1);
-  const endStr=endDate.toISOString().split('T')[0];
+  const {start,end}=_gcalStartEnd(task.nextService);
   return {
     summary:title,
     description:desc,
-    start:{date:task.nextService},
-    end:{date:endStr},
+    start,end,
     extendedProperties:{private:{kotlocrm_next_service_id:String(task.id||'')}},
   };
+}
+
+// Převede uloženou hodnotu (YYYY-MM-DDTHH:MM nebo YYYY-MM-DD) na GCal start/end
+function _gcalStartEnd(d) {
+  if(!d) return {start:{date:new Date().toISOString().slice(0,10)},end:{date:new Date().toISOString().slice(0,10)}};
+  const TZ='Europe/Prague';
+  const s=d.length===10?d+'T00:00':d.slice(0,16); // normalize to YYYY-MM-DDTHH:MM
+  const startDt=new Date(s);
+  const endDt=new Date(startDt.getTime()+60*60*1000); // +1 hodina
+  const fmt=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')+'T'+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')+':00';
+  return {start:{dateTime:fmt(startDt),timeZone:TZ},end:{dateTime:fmt(endDt),timeZone:TZ}};
 }
 
 // Upsert pomocník – při 404 (event smazán na GCal straně) vytvoří nový
