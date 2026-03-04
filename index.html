@@ -424,11 +424,14 @@ document.getElementById('photoInput').addEventListener('change', async e=>{
     const blob=await compressToBlob(file);
     S.editPhotos.push({src:URL.createObjectURL(blob),blob,path:null,isNew:true});
   }
-  e.target.value=''; render();
+  e.target.value='';
+  const el=document.getElementById('photos-edit-group');
+  if(el){const tmp=document.createElement('div');tmp.innerHTML=photoEditHtml();el.replaceWith(tmp.firstChild);}
+  else render();
 });
 
 function photoEditHtml() {
-  return `<div class="form-group">
+  return `<div class="form-group" id="photos-edit-group">
     <div class="form-label">Fotky (${S.editPhotos.length})</div>
     <div class="photos-scroll">
       ${S.editPhotos.map((p,i)=>`
@@ -442,7 +445,10 @@ function photoEditHtml() {
 }
 function removeEditPhoto(i) {
   const p=S.editPhotos[i]; if(p.src.startsWith('blob:'))URL.revokeObjectURL(p.src);
-  S.editPhotos.splice(i,1); render();
+  S.editPhotos.splice(i,1);
+  const el=document.getElementById('photos-edit-group');
+  if(el){const tmp=document.createElement('div');tmp.innerHTML=photoEditHtml();el.replaceWith(tmp.firstChild);}
+  else render();
 }
 function photoDisplayHtml(urls) {
   if(!urls?.length) return '';
@@ -494,16 +500,23 @@ function cancelForm() {
 // CUSTOMERS
 // ══════════════════════════════════════════════════════
 
+function custDisplayName(c) {
+  if (c.firma) return c.firma;
+  const jm = [c.jmeno, c.prijmeni].filter(Boolean).join(' ');
+  if (jm) return jm;
+  return c.prezdivka || c.name || '—';
+}
+
 async function renderCustomers() {
   const all=await DB.all('customers');
   const q=S.search.toLowerCase();
-  const list=(q?all.filter(c=>[c.name,c.phone,c.email].join(' ').toLowerCase().includes(q)):all)
-    .sort((a,b)=>(a.name||'').localeCompare(b.name||'','cs'));
+  const list=(q?all.filter(c=>[c.firma,c.jmeno,c.prijmeni,c.prezdivka,c.name,c.phone,c.email].join(' ').toLowerCase().includes(q)):all)
+    .sort((a,b)=>(custDisplayName(a)).localeCompare(custDisplayName(b),'cs'));
 
   const rows=list.length
     ? list.map(c=>`<div class="card" onclick="nav('customer-detail',{customerId:${c.id}})">
         <div class="card-left">
-          <div class="card-title">${esc(c.name)}</div>
+          <div class="card-title">${esc(custDisplayName(c))}</div>
           <div class="card-sub">${[c.phone,c.address].filter(Boolean).join(' · ')||'—'}</div>
         </div><div class="card-chev">›</div></div>`).join('')
     : `<div class="empty"><div class="empty-icon">👤</div>
@@ -541,16 +554,19 @@ async function renderCustomerDetail() {
 
   return `<div class="header">
     <button class="btn-icon" onclick="nav('customers')">‹</button>
-    <div class="header-title">${esc(c.name)}</div>
+    <div class="header-title">${esc(custDisplayName(c))}</div>
     <button class="btn-icon accent" onclick="openCustomerForm(${c.id})">✎</button>
   </div>
   <div class="scroll">
-    ${(c.phone||c.email||c.address||c.notes)?`<div class="sec-label">Kontakt</div><div class="detail-block">
+    <div class="sec-label">Kontakt</div><div class="detail-block">
+      ${c.firma     ?`<div class="detail-row"><div class="d-label">🏢 Firma</div><div class="d-value">${esc(c.firma)}</div></div>`:''}
+      ${(c.jmeno||c.prijmeni)?`<div class="detail-row"><div class="d-label">👤 Jméno</div><div class="d-value">${esc([c.jmeno,c.prijmeni].filter(Boolean).join(' '))}</div></div>`:''}
+      ${c.prezdivka ?`<div class="detail-row"><div class="d-label">🏷 Přezdívka</div><div class="d-value">${esc(c.prezdivka)}</div></div>`:''}
       ${c.phone  ?`<div class="detail-row"><div class="d-label">📞 Telefon</div><div class="d-value"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div></div>`:''}
       ${c.email  ?`<div class="detail-row"><div class="d-label">✉ Email</div><div class="d-value"><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div></div>`:''}
       ${c.address?`<div class="detail-row"><div class="d-label">🏠 Adresa</div><div class="d-value">${esc(c.address)}</div></div>`:''}
       ${c.notes  ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
-    </div>`:''}
+    </div>
     ${photoURLs.length?`<div class="sec-label">Fotky (${photoURLs.length})</div>${photoDisplayHtml(photoURLs)}`:''}
     <div class="sec-label">Lokace (${locs.length})</div>
     <div class="list">${locRows}</div>
@@ -571,8 +587,16 @@ async function renderCustomerForm() {
     <div style="width:44px"></div>
   </div>
   <div class="scroll"><div class="form-body">
-    <div class="form-group"><div class="form-label">Jméno / Firma *</div>
-      <input class="form-input" id="f-name" type="text" value="${esc(c.name||'')}" placeholder="Jan Novák"></div>
+    <div class="form-group"><div class="form-label">Firma</div>
+      <input class="form-input" id="f-firma" type="text" value="${esc(c.firma||'')}" placeholder="Název firmy"></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Jméno</div>
+        <input class="form-input" id="f-jmeno" type="text" value="${esc(c.jmeno||c.name||'')}" placeholder="Jan"></div>
+      <div class="form-group"><div class="form-label">Příjmení</div>
+        <input class="form-input" id="f-prijmeni" type="text" value="${esc(c.prijmeni||'')}" placeholder="Novák"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Přezdívka</div>
+      <input class="form-input" id="f-prezdivka" type="text" value="${esc(c.prezdivka||'')}" placeholder="Pepík"></div>
     <div class="form-row">
       <div class="form-group"><div class="form-label">Telefon</div>
         <input class="form-input" id="f-phone" type="tel" value="${esc(c.phone||'')}" placeholder="+420 …"></div>
@@ -593,9 +617,14 @@ async function renderCustomerForm() {
   </div>`;
 }
 async function saveCustomer() {
-  const name=document.getElementById('f-name')?.value?.trim(); if(!name){toast('❗ Zadej jméno');return;}
+  const firma=document.getElementById('f-firma')?.value?.trim()||'';
+  const jmeno=document.getElementById('f-jmeno')?.value?.trim()||'';
+  const prijmeni=document.getElementById('f-prijmeni')?.value?.trim()||'';
+  const prezdivka=document.getElementById('f-prezdivka')?.value?.trim()||'';
+  const name=custDisplayName({firma,jmeno,prijmeni,prezdivka});
+  if(!name||name==='—'){toast('❗ Zadej firmu nebo jméno');return;}
   const now=new Date().toISOString(), ex=S.customerId?await DB.get('customers',S.customerId):null;
-  const item={name, phone:document.getElementById('f-phone')?.value?.trim()||'', email:document.getElementById('f-email')?.value?.trim()||'', address:document.getElementById('f-address')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  const item={name, firma, jmeno, prijmeni, prezdivka, phone:document.getElementById('f-phone')?.value?.trim()||'', email:document.getElementById('f-email')?.value?.trim()||'', address:document.getElementById('f-address')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
   if(S.customerId) item.id=S.customerId;
   const id=await DB.put('customers',item);
   await DB.put('customers',{...item,id,photos:await savePhotos('customers',id,S.editPhotos,ex?.photos||[])});
@@ -927,7 +956,7 @@ async function renderCalendar() {
   const locMap  = Object.fromEntries(allLocations.map(x=>[x.id,x]));
   const devMap  = Object.fromEntries(allDevices.map(x=>[x.id,x]));
 
-  const filterCusts = allCustomers.sort((a,b)=>(a.name||'').localeCompare(b.name||'','cs'));
+  const filterCusts = allCustomers.sort((a,b)=>custDisplayName(a).localeCompare(custDisplayName(b),'cs'));
   const filterLocs  = allLocations.filter(l => !c.filterCustomerId || l.customerId==c.filterCustomerId)
     .sort((a,b)=>(a.address||'').localeCompare(b.address||'','cs'));
   const filterDevs  = allDevices.filter(d => {
@@ -986,7 +1015,7 @@ async function renderCalendar() {
   function taskCard(t) {
     const st=t.status||'nova';
     const dev=devMap[t.deviceId], loc=locMap[t.locationId], cust=custMap[t.customerId];
-    const path=[cust?.name, loc?.address, dev?.name||dev?.type].filter(Boolean).join(' › ');
+    const path=[cust?custDisplayName(cust):null, loc?.address, dev?.name||dev?.type].filter(Boolean).join(' › ');
     return `<div class="cal-task-card s-${st}" onclick="openTaskFromCalendar(${t.id})">
       <div class="cal-task-top">
         <div class="cal-task-date">${fmtDate(t.date)}</div>
@@ -1051,19 +1080,18 @@ async function renderCalendar() {
         ${cells}
       </div>
 
-      ${upcoming.length ? `
-        <div class="cal-divider">Nadcházející${c.selectedDate?' – '+selectedLabel:''} (${upcoming.length})</div>
-        ${upcoming.map(taskCard).join('')}` : ''}
+      <div class="cal-divider">Nadcházející${c.selectedDate?' – '+selectedLabel:''} (${upcoming.length})</div>
+      ${upcoming.length ? upcoming.map(taskCard).join('') : `<div style="padding:14px 16px;color:var(--muted);font-size:13px">Žádné naplánované zakázky${c.selectedDate?'':' – zadej zakázce budoucí datum'}</div>`}
 
       ${past.length ? `
         <div class="cal-divider">Minulé${c.selectedDate?' – '+selectedLabel:''} (${past.length})</div>
         ${past.map(taskCard).join('')}` : ''}
 
-      ${!upcoming.length && !past.length ? `
+      ${!upcoming.length && !past.length && !c.selectedDate ? `
         <div class="empty" style="padding:30px 20px">
           <div class="empty-icon">📭</div>
           <div class="empty-title">Žádné zakázky</div>
-          <div>${hasFilter||c.selectedDate?'Zkus jiný filtr nebo datum':'Přidej první zakázku přes zařízení'}</div>
+          <div>${hasFilter?'Zkus jiný filtr':'Přidej první zakázku přes zařízení'}</div>
         </div>` : ''}
     </div>`;
 }
