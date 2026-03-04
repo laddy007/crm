@@ -931,13 +931,24 @@ async function saveTask() {
   const priceRaw=document.getElementById('f-price')?.value?.trim();
   const item={deviceId:ex?.deviceId||S.deviceId, locationId:ex?.locationId||S.locationId, customerId:ex?.customerId||S.customerId, date, title:document.getElementById('f-title')?.value?.trim()||'', status:document.getElementById('f-status')?.value||'nova', repairType:document.getElementById('f-repairType')?.value||'', description:document.getElementById('f-description')?.value?.trim()||'', parts:document.getElementById('f-parts')?.value?.trim()||'', price:priceRaw?Number(priceRaw):null, nextService:document.getElementById('f-nextService')?.value||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
   if(S.taskId) item.id=S.taskId;
+  if(ex?.gcalEventId) item.gcalEventId=ex.gcalEventId;
   const id=await DB.put('tasks',item);
-  await DB.put('tasks',{...item,id,photos:await savePhotos('tasks',id,S.editPhotos,ex?.photos||[])});
-  S.taskId=id; toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
+  const savedItem={...item,id,photos:await savePhotos('tasks',id,S.editPhotos,ex?.photos||[])};
+  await DB.put('tasks',savedItem);
+  S.taskId=id;
+  if(localStorage.getItem('gcal_enabled')) {
+    try {
+      const gcalEventId=await gcalCreateOrUpdateEvent(savedItem);
+      if(gcalEventId && gcalEventId!==savedItem.gcalEventId)
+        await DB.put('tasks',{...savedItem,gcalEventId});
+    } catch(e){toast('⚠ Google Kalendář: '+e.message);}
+  }
+  toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
 }
 async function deleteTask(id) {
   if(!confirm('Smazat zakázku?')) return;
   const t=await DB.get('tasks',id); for(const p of(t?.photos||[])) await OPFS.del(p);
+  if(localStorage.getItem('gcal_enabled') && t?.gcalEventId) await gcalDeleteEvent(t.gcalEventId);
   await DB.del('tasks',id); toast('Zakázka smazána'); nav('device-detail',{taskId:null});
 }
 
@@ -1170,6 +1181,12 @@ function showBackupPanel() {
              <div class="backup-btn-desc">Nahradí lokální data daty z Drive</div></div>
       </button>
     </div>
+    <label class="backup-btn" style="cursor:pointer;gap:12px" id="gcal-toggle-row">
+      <div class="backup-btn-icon">📅</div>
+      <div style="flex:1"><div class="backup-btn-label">Sync zakázek do Google Kalendáře</div>
+           <div class="backup-btn-desc" id="gcal-toggle-desc">Při uložení/smazání zakázky se aktualizuje Google Kalendář</div></div>
+      <input type="checkbox" id="gcal-toggle" style="width:20px;height:20px;accent-color:var(--accent);flex-shrink:0" onchange="localStorage.setItem('gcal_enabled',this.checked?'1':'');document.getElementById('gcal-toggle-desc').textContent=this.checked?'Zapnuto – zakázky se synchronizují':'Při uložení/smazání zakázky se aktualizuje Google Kalendář'">
+    </label>
     <button class="backup-btn" onclick="checkForUpdate()">
       <div class="backup-btn-icon">↻</div>
       <div><div class="backup-btn-label">Zkontrolovat aktualizaci</div>
@@ -1199,6 +1216,13 @@ function showBackupPanel() {
     if(dsc) dsc.textContent='Jednorázové propojení s Drive';
     if(stg) stg.style.display='none';
     if(pullBtn) pullBtn.style.display='none';
+  }
+  const gcalCb=document.getElementById('gcal-toggle');
+  const gcalDesc=document.getElementById('gcal-toggle-desc');
+  if(gcalCb){
+    const enabled=!!localStorage.getItem('gcal_enabled');
+    gcalCb.checked=enabled;
+    if(gcalDesc) gcalDesc.textContent=enabled?'Zapnuto – zakázky se synchronizují':'Při uložení/smazání zakázky se aktualizuje Google Kalendář';
   }
 }
 
@@ -1387,7 +1411,7 @@ function _getDriveTokenClient() {
   const clientId=gdriveClientId(); if(!clientId) return null;
   _driveTokenClient=google.accounts.oauth2.initTokenClient({
     client_id:clientId,
-    scope:'https://www.googleapis.com/auth/drive.file',
+    scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar',
     prompt:'select_account',
     callback:()=>{},
   });
@@ -1459,6 +1483,57 @@ async function driveDownloadFile(token,fileId) {
     {headers:{Authorization:'Bearer '+token}});
   if(!res.ok) throw new Error((await res.text()).slice(0,200));
   return res.blob();
+}
+
+// ── Google Calendar sync ──────────────────────────────
+function taskToGCalEvent(task,cust,loc,dev) {
+  const custName=cust?custDisplayName(cust):'';
+  const title=[custName,task.title||'Zakázka'].filter(Boolean).join(' – ');
+  const desc=[
+    custName?'Zákazník: '+custName:'',
+    loc?'Lokace: '+(loc.address||''):'',
+    dev?'Zařízení: '+(dev.name||dev.type||''):'',
+    task.repairType?'Typ: '+task.repairType:'',
+    task.description?'Popis: '+task.description:'',
+    task.parts?'Díly: '+task.parts:'',
+    task.price?'Cena: '+task.price+' Kč':'',
+    task.notes?'Poznámky: '+task.notes:'',
+  ].filter(Boolean).join('\n');
+  const endDate=new Date(task.date); endDate.setDate(endDate.getDate()+1);
+  const endStr=endDate.toISOString().split('T')[0];
+  return {
+    summary:title,
+    description:desc,
+    start:{date:task.date},
+    end:{date:endStr},
+    extendedProperties:{private:{kotlocrm_task_id:String(task.id||'')}},
+  };
+}
+
+async function gcalCreateOrUpdateEvent(task) {
+  if(!task.date) return null;
+  const token=await getDriveToken();
+  const [cust,loc,dev]=await Promise.all([
+    task.customerId?DB.get('customers',task.customerId):Promise.resolve(null),
+    task.locationId?DB.get('locations',task.locationId):Promise.resolve(null),
+    task.deviceId?DB.get('devices',task.deviceId):Promise.resolve(null),
+  ]);
+  const event=taskToGCalEvent(task,cust,loc,dev);
+  const base='https://www.googleapis.com/calendar/v3/calendars/primary/events';
+  const res=task.gcalEventId
+    ?await _driveReq(token,'PATCH',`${base}/${task.gcalEventId}`,JSON.stringify(event),'application/json')
+    :await _driveReq(token,'POST',base,JSON.stringify(event),'application/json');
+  const data=await res.json();
+  return data.id||null;
+}
+
+async function gcalDeleteEvent(eventId) {
+  if(!eventId) return;
+  try {
+    const token=await getDriveToken();
+    await _driveReq(token,'DELETE',
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`);
+  } catch(e){/* event mohl být ručně smazán v GCal */}
 }
 
 // ── Push sync ────────────────────────────────────────
