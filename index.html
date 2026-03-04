@@ -938,6 +938,7 @@ async function saveTask() {
   const item={deviceId:ex?.deviceId||S.deviceId, locationId:ex?.locationId||S.locationId, customerId:ex?.customerId||S.customerId, date, title:document.getElementById('f-title')?.value?.trim()||'', status:document.getElementById('f-status')?.value||'nova', repairType:document.getElementById('f-repairType')?.value||'', description:document.getElementById('f-description')?.value?.trim()||'', parts:document.getElementById('f-parts')?.value?.trim()||'', price:priceRaw?Number(priceRaw):null, nextService:document.getElementById('f-nextService')?.value||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
   if(S.taskId) item.id=S.taskId;
   if(ex?.gcalEventId) item.gcalEventId=ex.gcalEventId;
+  if(ex?.gcalNextServiceEventId) item.gcalNextServiceEventId=ex.gcalNextServiceEventId;
   const id=await DB.put('tasks',item);
   const savedItem={...item,id,photos:await savePhotos('tasks',id,S.editPhotos,ex?.photos||[])};
   await DB.put('tasks',savedItem);
@@ -1593,7 +1594,7 @@ function taskToGCalNextServiceEvent(task,cust,loc,dev) {
 
 // Převede uloženou hodnotu (YYYY-MM-DDTHH:MM nebo YYYY-MM-DD) na GCal start/end
 function _gcalStartEnd(d) {
-  if(!d) return {start:{date:new Date().toISOString().slice(0,10)},end:{date:new Date().toISOString().slice(0,10)}};
+  if(!d) return {start:{date:new Date().toISOString().slice(0,10)},end:{date:new Date(Date.now()+86400000).toISOString().slice(0,10)}};
   const TZ='Europe/Prague';
   const s=d.length===10?d+'T00:00':d.slice(0,16); // normalize to YYYY-MM-DDTHH:MM
   const startDt=new Date(s);
