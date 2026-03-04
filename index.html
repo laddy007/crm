@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#FF6B35">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>KotloCRM</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0D0D0D; --surface: #181818; --surface2: #222;
+      --border: #2C2C2C; --accent: #FF6B35; --text: #F0F0F0;
+      --muted: #888; --danger: #EF5350;
+    }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; -webkit-tap-highlight-color: transparent; user-select: none; }
+    #app { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* LOADING */
+    #loading { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 9999; }
+    .loading-logo { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; }
+    .loading-logo b { color: var(--accent); }
+    .loading-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 1s infinite ease-in-out; }
+    @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1)} }
+
+    /* HEADER */
+    .header { height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 8px; gap: 4px; flex-shrink: 0; }
+    .header-title { flex: 1; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 19px; font-weight: 700; letter-spacing: .5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .header-title b { color: var(--accent); }
+    .btn-icon { width: 44px; height: 44px; border-radius: 10px; border: none; background: transparent; color: var(--text); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .btn-icon:active { background: var(--surface2); }
+    .btn-icon.accent { color: var(--accent); }
+
+    /* BREADCRUMB */
+    .breadcrumb { padding: 7px 14px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .breadcrumb span { color: var(--muted); }
+    .breadcrumb b { color: var(--text); }
+
+    /* SCROLL */
+    .scroll { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 90px; }
+
+    /* SEARCH */
+    .search-bar { padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    .search-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px 10px 38px; color: var(--text); font-family: inherit; font-size: 15px; outline: none; }
+    .search-input:focus { border-color: var(--accent); }
+
+    /* SECTION LABEL */
+    .sec-label { padding: 18px 16px 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+
+    /* CARDS */
+    .list { padding: 8px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .card:active { border-color: var(--accent); background: var(--surface2); }
+    .card-left { flex: 1; min-width: 0; }
+    .card-title { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-sub   { color: var(--muted); font-size: 13px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-chev  { color: var(--muted); font-size: 20px; flex-shrink: 0; }
+    .card-icon  { font-size: 22px; flex-shrink: 0; }
+
+    /* status accent strips */
+    .s-nova      { border-left: 3px solid #90CAF9; }
+    .s-probiha   { border-left: 3px solid #FFAB76; }
+    .s-dokoncena { border-left: 3px solid #A5D6A7; }
+    .s-ceka      { border-left: 3px solid #FFE082; }
+
+    /* DETAIL BLOCK */
+    .detail-block { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+    .detail-row { display: flex; padding: 13px 16px; border-bottom: 1px solid var(--border); gap: 12px; align-items: flex-start; }
+    .detail-row:last-child { border-bottom: none; }
+    .d-label { width: 96px; color: var(--muted); font-size: 13px; flex-shrink: 0; padding-top: 1px; }
+    .d-value { flex: 1; font-size: 15px; line-height: 1.5; word-break: break-word; }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* BADGE */
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+    .badge-nova      { background:#1A2E4A; color:#90CAF9; }
+    .badge-probiha   { background:#3A1E0A; color:#FFAB76; }
+    .badge-dokoncena { background:#1A3320; color:#A5D6A7; }
+    .badge-ceka      { background:#332E00; color:#FFE082; }
+
+    /* PHOTOS */
+    .photos-scroll { display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .photo-thumb { width: 82px; height: 82px; border-radius: 10px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); cursor: pointer; background: var(--surface2); }
+    .photo-add { width: 82px; height: 82px; border-radius: 10px; border: 1.5px dashed var(--border); background: var(--surface2); color: var(--muted); font-size: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+    .photo-add:active { border-color: var(--accent); color: var(--accent); }
+    .photo-edit-wrap { position: relative; flex-shrink: 0; }
+    .photo-edit-thumb { width: 82px; height: 82px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border); cursor: pointer; display: block; background: var(--surface2); }
+    .photo-del { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: var(--danger); border-radius: 50%; border: 2px solid var(--bg); color: white; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    /* FAB */
+    .fab { position: fixed; bottom: 22px; right: 18px; width: 58px; height: 58px; background: var(--accent); border-radius: 18px; border: none; color: white; font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px rgba(255,107,53,.45); transition: transform .1s; z-index: 100; }
+    .fab:active { transform: scale(.9); }
+
+    /* FORMS */
+    .form-body { padding: 14px 14px 4px; display: flex; flex-direction: column; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+    .form-input, .form-textarea, .form-select { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: inherit; font-size: 15px; outline: none; width: 100%; }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+    .form-textarea { resize: vertical; min-height: 76px; }
+    .form-select option { background: #222; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    .btn-row { display: flex; gap: 8px; padding: 14px; }
+    .btn-row .btn { flex: 1; }
+    .btn { border: none; border-radius: 12px; padding: 14px 18px; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .12s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn:active { opacity: .72; }
+    .btn-primary   { background: var(--accent); color: white; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger    { background: rgba(239,83,80,.12); color: var(--danger); border: 1px solid rgba(239,83,80,.25); }
+    .btn-full      { width: calc(100% - 28px); margin: 0 14px 14px; }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .35; }
+    .empty-title { font-size: 16px; color: var(--text); margin-bottom: 4px; }
+
+    /* LIGHTBOX */
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.96); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    .lightbox img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+    .lb-close { position: fixed; top: 16px; right: 16px; width: 44px; height: 44px; background: rgba(255,255,255,.1); border-radius: 50%; border: none; color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 94px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 9px 20px; border-radius: 20px; font-size: 14px; z-index: 500; white-space: nowrap; animation: fadeUp .2s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+    .price-accent { color: var(--accent); font-weight: 600; }
+
+    /* BACKUP PANEL */
+    .backup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; display: flex; align-items: flex-end; animation: fadeIn .15s; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .backup-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 0 0 32px; border-top: 1px solid var(--border); animation: slideUp .2s ease; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .backup-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 16px; }
+    .backup-title { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: .5px; padding: 0 20px 14px; border-bottom: 1px solid var(--border); }
+    .backup-title span { color: var(--accent); }
+    .backup-actions { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .backup-btn { display: flex; align-items: center; gap: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; cursor: pointer; text-align: left; width: 100%; font-family: inherit; color: var(--text); }
+    .backup-btn:active { border-color: var(--accent); }
+    .backup-btn-icon { font-size: 26px; flex-shrink: 0; }
+    .backup-btn-label { font-size: 15px; font-weight: 600; }
+    .backup-btn-desc  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .backup-info { margin: 0 14px; padding: 12px 14px; background: rgba(255,107,53,.08); border: 1px solid rgba(255,107,53,.2); border-radius: 10px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .progress-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin: 0 14px; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 90; flex-shrink: 0; }
+    .nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    .nav-tab.active { color: var(--accent); }
+    .nav-tab-icon { font-size: 22px; line-height: 1; }
+
+    /* CALENDAR */
+    .cal-filters { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .cal-filter-row { display: flex; gap: 8px; }
+    .cal-filter-select { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 8px 10px; color: var(--text); font-family: inherit; font-size: 13px; outline: none; min-width: 0; }
+    .cal-filter-select:focus { border-color: var(--accent); }
+    .cal-filter-select option { background: #222; }
+    .cal-filter-clear { background: transparent; border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; color: var(--muted); font-family: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .cal-filter-clear:active { border-color: var(--accent); color: var(--accent); }
+
+    .month-nav { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 4px; }
+    .month-label { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+    .month-btn { width: 36px; height: 36px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .month-btn:active { border-color: var(--accent); }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; padding: 4px 14px 8px; }
+    .cal-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--muted); padding: 4px 0; letter-spacing: .5px; text-transform: uppercase; }
+    .cal-day { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; gap: 2px; }
+    .cal-day:active { background: var(--surface2); }
+    .cal-day.other-month .cal-day-num { color: #444; }
+    .cal-day.today .cal-day-num { background: var(--accent); color: white; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
+    .cal-day.selected { background: rgba(255,107,53,.12); border: 1px solid rgba(255,107,53,.3); }
+    .cal-day-num { font-size: 13px; font-weight: 500; line-height: 1; }
+    .cal-dots { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 28px; }
+    .cal-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .dot-nova      { background: #90CAF9; }
+    .dot-probiha   { background: #FFAB76; }
+    .dot-dokoncena { background: #A5D6A7; }
+    .dot-ceka      { background: #FFE082; }
+
+    .cal-divider { padding: 10px 16px 4px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--border); margin-top: 4px; }
+    .cal-task-card { margin: 0 14px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; }
+    .cal-task-card:active { border-color: var(--accent); background: var(--surface2); }
+    .cal-task-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .cal-task-date { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+    .cal-task-title { font-weight: 600; font-size: 15px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-task-path { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-task-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+    .cal-task-price { font-size: 13px; color: var(--accent); font-weight: 600; }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="loading"><div class="loading-logo"><b>Kotlo</b>CRM</div><div class="loading-dot"></div></div>
+<div id="app"></div>
+<input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none">
+<input type="file" id="importInput" accept=".zip" style="display:none">
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+// OPFS
+// ══════════════════════════════════════════════════════
+
+const OPFS = {
+  _root: null,
+  async init() {
+    this._root = await navigator.storage.getDirectory();
+    const p = await this._root.getDirectoryHandle('photos', { create: true });
+    for (const s of ['customers','locations','devices','tasks'])
+      await p.getDirectoryHandle(s, { create: true });
+  },
+  async _dir(sub) {
+    const p = await this._root.getDirectoryHandle('photos');
+    return p.getDirectoryHandle(sub, { create: true });
+  },
+  async write(sub, fname, data) {
+    const dir = await this._dir(sub);
+    const fh  = await dir.getFileHandle(fname, { create: true });
+    const wr  = await fh.createWritable();
+    await wr.write(data); await wr.close();
+    return `${sub}/${fname}`;
+  },
+  async readBlob(path) {
+    const [s,f] = path.split('/');
+    return (await (await this._dir(s)).getFileHandle(f)).getFile();
+  },
+  async del(path) {
+    try { const [s,f]=path.split('/'); await (await this._dir(s)).removeEntry(f); } catch {}
+  },
+  async listAll() {
+    const res=[], p=await this._root.getDirectoryHandle('photos');
+    for await (const [s,dh] of p.entries()) {
+      if (dh.kind!=='directory') continue;
+      for await (const [f,fh] of dh.entries())
+        if (fh.kind==='file') res.push({ path:`${s}/${f}`, handle:fh });
+    }
+    return res;
+  }
+};
+
+// ══════════════════════════════════════════════════════
+// PHOTO CACHE
+// ══════════════════════════════════════════════════════
+
+const PC = Object.create(null);
+async function resolveURL(path) {
+  if (!path) return '';
+  if (PC[path]) return PC[path];
+  try { return (PC[path] = URL.createObjectURL(await OPFS.readBlob(path))); } catch { return ''; }
+}
+async function resolveURLs(paths) { return Promise.all((paths||[]).map(resolveURL)); }
+function clearCache() {
+  for (const u of Object.values(PC)) try { URL.revokeObjectURL(u); } catch {}
+  for (const k of Object.keys(PC)) delete PC[k];
+}
+
+// ══════════════════════════════════════════════════════
+// INDEXEDDB
+// Schema: customers → locations → devices → tasks
+// ══════════════════════════════════════════════════════
+
+let db;
+function openDB() {
+  return new Promise((res,rej) => {
+    const req = indexedDB.open('kotlocrm_v2', 1);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      d.createObjectStore('customers', { keyPath:'id', autoIncrement:true });
+
+      const ls = d.createObjectStore('locations', { keyPath:'id', autoIncrement:true });
+      ls.createIndex('customerId','customerId');
+
+      const ds = d.createObjectStore('devices', { keyPath:'id', autoIncrement:true });
+      ds.createIndex('locationId','locationId');
+      ds.createIndex('customerId','customerId');
+
+      const ts = d.createObjectStore('tasks', { keyPath:'id', autoIncrement:true });
+      ts.createIndex('deviceId','deviceId');
+      ts.createIndex('customerId','customerId');
+    };
+    req.onsuccess = () => { db=req.result; res(); };
+    req.onerror  = () => rej(req.error);
+  });
+}
+
+const DB = {
+  get:    (s,id)  => new Promise((r,j)=>{ const q=db.transaction(s).objectStore(s).get(id); q.onsuccess=()=>r(q.result); q.onerror=()=>j(q.error); }),
+  all:    (s)     => new Promise((r,j)=>{ const q=db.transaction(s).objectStore(s).getAll(); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>j(q.error); }),
+  idx:    (s,i,v) => new Promise((r,j)=>{ const q=db.transaction(s).objectStore(s).index(i).getAll(v); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>j(q.error); }),
+  put:    (s,it)  => new Promise((r,j)=>{ const q=db.transaction(s,'readwrite').objectStore(s).put(it); q.onsuccess=()=>r(q.result); q.onerror=()=>j(q.error); }),
+  del:    (s,id)  => new Promise((r,j)=>{ const q=db.transaction(s,'readwrite').objectStore(s).delete(id); q.onsuccess=()=>r(); q.onerror=()=>j(q.error); }),
+  delIdx: async(s,i,v) => { for(const x of await DB.idx(s,i,v)) await DB.del(s,x.id); }
+};
+
+// ══════════════════════════════════════════════════════
+// STATE & ROUTER
+// ══════════════════════════════════════════════════════
+
+const S = {
+  view:'customers',
+  tab:'customers', // 'customers' | 'calendar'
+  customerId:null, locationId:null, deviceId:null, taskId:null,
+  editPhotos:[],
+  search:'',
+  _customer:null, _location:null, _device:null,
+  // calendar state
+  cal: {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(), // 0-11
+    selectedDate: null, // 'YYYY-MM-DD' or null = show all
+    filterCustomerId: '',
+    filterLocationId: '',
+    filterDeviceId: '',
+    filterStatus: '',
+  }
+};
+
+async function nav(view, params={}) {
+  clearCache();
+  Object.assign(S, params);
+  S.view = view;
+  // track active tab
+  if (['customers','customer-detail','customer-form','location-detail','location-form','device-detail','device-form','task-detail','task-form'].includes(view)) S.tab='customers';
+  if (view==='calendar') S.tab='calendar';
+  // Prefetch breadcrumb labels
+  if (S.customerId) S._customer = await DB.get('customers', S.customerId);
+  if (S.locationId) S._location = await DB.get('locations', S.locationId);
+  if (S.deviceId)   S._device   = await DB.get('devices',   S.deviceId);
+  await render();
+}
+
+function bottomNav() {
+  return `<div class="bottom-nav">
+    <button class="nav-tab ${S.tab==='customers'?'active':''}" onclick="nav('customers')">
+      <div class="nav-tab-icon">👤</div>Zákazníci
+    </button>
+    <button class="nav-tab ${S.tab==='calendar'?'active':''}" onclick="nav('calendar')">
+      <div class="nav-tab-icon">📅</div>Kalendář
+    </button>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════
+
+function esc(s) { return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { return d?new Date(d).toLocaleDateString('cs-CZ'):'—'; }
+function fmtPrice(p) { return p?Number(p).toLocaleString('cs-CZ')+'&nbsp;Kč':'—'; }
+const STATUS = { nova:'Nová', probiha:'Probíhá', dokoncena:'Dokončena', ceka:'Čeká na díl' };
+
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),2400);
+}
+function showLightbox(src) {
+  const lb=document.createElement('div'); lb.className='lightbox';
+  lb.innerHTML=`<img src="${src}"><button class="lb-close" onclick="this.parentElement.remove()">✕</button>`;
+  lb.addEventListener('click',e=>{if(e.target===lb)lb.remove();});
+  document.body.appendChild(lb);
+}
+async function compressToBlob(file) {
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=1200,ratio=Math.min(MAX/img.width,MAX/img.height,1);
+        const c=document.createElement('canvas');
+        c.width=Math.round(img.width*ratio); c.height=Math.round(img.height*ratio);
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        c.toBlob(b=>res(b),'image/jpeg',.75);
+      };
+      img.src=e.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// BREADCRUMB
+// ══════════════════════════════════════════════════════
+
+function breadcrumb(...parts) {
+  return `<div class="breadcrumb">${parts.map((p,i)=>
+    i<parts.length-1
+      ? `<span onclick="nav('${p.view}',${JSON.stringify(p.params||{})})" style="cursor:pointer">${esc(p.label)}</span> ›`
+      : `<b>${esc(p.label)}</b>`
+  ).join(' ')}</div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// PHOTO HELPERS
+// ══════════════════════════════════════════════════════
+
+document.getElementById('photoInput').addEventListener('change', async e=>{
+  for (const file of Array.from(e.target.files)) {
+    const blob=await compressToBlob(file);
+    S.editPhotos.push({src:URL.createObjectURL(blob),blob,path:null,isNew:true});
+  }
+  e.target.value=''; render();
+});
+
+function photoEditHtml() {
+  return `<div class="form-group">
+    <div class="form-label">Fotky (${S.editPhotos.length})</div>
+    <div class="photos-scroll">
+      ${S.editPhotos.map((p,i)=>`
+        <div class="photo-edit-wrap">
+          <img src="${esc(p.src)}" class="photo-edit-thumb" onclick="showLightbox('${esc(p.src)}')">
+          <div class="photo-del" onclick="removeEditPhoto(${i})">✕</div>
+        </div>`).join('')}
+      <div class="photo-add" onclick="document.getElementById('photoInput').click()">＋</div>
+    </div>
+  </div>`;
+}
+function removeEditPhoto(i) {
+  const p=S.editPhotos[i]; if(p.src.startsWith('blob:'))URL.revokeObjectURL(p.src);
+  S.editPhotos.splice(i,1); render();
+}
+function photoDisplayHtml(urls) {
+  if(!urls?.length) return '';
+  return `<div class="photos-scroll">${urls.map(u=>u?`<img src="${esc(u)}" class="photo-thumb" onclick="showLightbox('${esc(u)}')">`:'').join('')}</div>`;
+}
+async function savePhotos(sub, id, editPhotos, oldPaths) {
+  const kept=new Set(editPhotos.filter(p=>!p.isNew).map(p=>p.path));
+  for (const op of (oldPaths||[])) if(!kept.has(op)) await OPFS.del(op);
+  const res=[];
+  for (const p of editPhotos) {
+    if (!p.isNew){res.push(p.path);continue;}
+    res.push(await OPFS.write(sub,`${sub.slice(0,-1)}_${id}_${Date.now()}_${res.length}.jpg`,p.blob));
+  }
+  return res;
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER DISPATCH
+// ══════════════════════════════════════════════════════
+
+async function render() {
+  const views = {
+    customers:         renderCustomers,
+    'customer-detail': renderCustomerDetail,
+    'customer-form':   renderCustomerForm,
+    'location-detail': renderLocationDetail,
+    'location-form':   renderLocationForm,
+    'device-detail':   renderDeviceDetail,
+    'device-form':     renderDeviceForm,
+    'task-detail':     renderTaskDetail,
+    'task-form':       renderTaskForm,
+    'calendar':        renderCalendar,
+  };
+  const fn=views[S.view];
+  if(fn) {
+    const html = await fn();
+    document.getElementById('app').innerHTML = html + bottomNav();
+  }
+}
+
+function cancelForm() {
+  if(S.view==='customer-form') S.customerId?nav('customer-detail'):nav('customers');
+  else if(S.view==='location-form') S.locationId?nav('location-detail'):nav('customer-detail');
+  else if(S.view==='device-form')   S.deviceId?nav('device-detail'):nav('location-detail');
+  else if(S.view==='task-form')     S.taskId?nav('task-detail'):nav('device-detail');
+}
+
+// ══════════════════════════════════════════════════════
+// CUSTOMERS
+// ══════════════════════════════════════════════════════
+
+async function renderCustomers() {
+  const all=await DB.all('customers');
+  const q=S.search.toLowerCase();
+  const list=(q?all.filter(c=>[c.name,c.phone,c.email].join(' ').toLowerCase().includes(q)):all)
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||'','cs'));
+
+  const rows=list.length
+    ? list.map(c=>`<div class="card" onclick="nav('customer-detail',{customerId:${c.id}})">
+        <div class="card-left">
+          <div class="card-title">${esc(c.name)}</div>
+          <div class="card-sub">${[c.phone,c.address].filter(Boolean).join(' · ')||'—'}</div>
+        </div><div class="card-chev">›</div></div>`).join('')
+    : `<div class="empty"><div class="empty-icon">👤</div>
+        <div class="empty-title">${q?'Žádné výsledky':'Zatím žádní zákazníci'}</div>
+        <div>${q?'Zkus jiný dotaz':'Přidej prvního tlačítkem +'}</div></div>`;
+
+  return `<div class="header">
+    <div style="width:44px"></div>
+    <div class="header-title"><b>Kotlo</b>CRM</div>
+    <button class="btn-icon accent" onclick="showBackupPanel()" title="Záloha">⇅</button>
+  </div>
+  <div class="search-bar"><div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="search" placeholder="Hledat zákazníka…"
+           value="${esc(S.search)}" oninput="S.search=this.value;render()">
+  </div></div>
+  <div class="scroll">
+    <div class="sec-label">Zákazníci (${list.length})</div>
+    <div class="list">${rows}</div>
+  </div>
+  <button class="fab" onclick="openCustomerForm(null)">＋</button>`;
+}
+
+async function renderCustomerDetail() {
+  const c=await DB.get('customers',S.customerId); if(!c){nav('customers');return '';}
+  const locs=(await DB.idx('locations','customerId',S.customerId)).sort((a,b)=>(a.address||'').localeCompare(b.address||'','cs'));
+  const photoURLs=await resolveURLs(c.photos);
+  const locRows=locs.length
+    ? locs.map(l=>`<div class="card" onclick="nav('location-detail',{locationId:${l.id},customerId:${c.id}})">
+        <div class="card-left">
+          <div class="card-title">${esc(l.address)}${l.city?', '+esc(l.city):''}</div>
+          <div class="card-sub">${l.floor||'—'}</div>
+        </div><div class="card-chev">›</div></div>`).join('')
+    : `<div class="empty" style="padding:28px 20px"><div class="empty-icon" style="font-size:32px">📍</div><div>Zatím žádné lokace</div></div>`;
+
+  return `<div class="header">
+    <button class="btn-icon" onclick="nav('customers')">‹</button>
+    <div class="header-title">${esc(c.name)}</div>
+    <button class="btn-icon accent" onclick="openCustomerForm(${c.id})">✎</button>
+  </div>
+  <div class="scroll">
+    ${(c.phone||c.email||c.address||c.notes)?`<div class="sec-label">Kontakt</div><div class="detail-block">
+      ${c.phone  ?`<div class="detail-row"><div class="d-label">📞 Telefon</div><div class="d-value"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div></div>`:''}
+      ${c.email  ?`<div class="detail-row"><div class="d-label">✉ Email</div><div class="d-value"><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div></div>`:''}
+      ${c.address?`<div class="detail-row"><div class="d-label">🏠 Adresa</div><div class="d-value">${esc(c.address)}</div></div>`:''}
+      ${c.notes  ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
+    </div>`:''}
+    ${photoURLs.length?`<div class="sec-label">Fotky (${photoURLs.length})</div>${photoDisplayHtml(photoURLs)}`:''}
+    <div class="sec-label">Lokace (${locs.length})</div>
+    <div class="list">${locRows}</div>
+  </div>
+  <button class="fab" onclick="openLocationForm(null,${c.id})">＋</button>`;
+}
+
+async function openCustomerForm(id) {
+  S.editPhotos=[];
+  if(id){ const c=await DB.get('customers',id); for(const p of(c.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); }
+  nav('customer-form',{customerId:id});
+}
+async function renderCustomerForm() {
+  const isEdit=!!S.customerId, c=isEdit?(await DB.get('customers',S.customerId)||{}):{};
+  return `<div class="header">
+    <button class="btn-icon" onclick="cancelForm()">✕</button>
+    <div class="header-title">${isEdit?'Upravit zákazníka':'Nový zákazník'}</div>
+    <div style="width:44px"></div>
+  </div>
+  <div class="scroll"><div class="form-body">
+    <div class="form-group"><div class="form-label">Jméno / Firma *</div>
+      <input class="form-input" id="f-name" type="text" value="${esc(c.name||'')}" placeholder="Jan Novák"></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Telefon</div>
+        <input class="form-input" id="f-phone" type="tel" value="${esc(c.phone||'')}" placeholder="+420 …"></div>
+      <div class="form-group"><div class="form-label">Email</div>
+        <input class="form-input" id="f-email" type="email" value="${esc(c.email||'')}" placeholder="email@…"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Fakturační adresa</div>
+      <input class="form-input" id="f-address" type="text" value="${esc(c.address||'')}" placeholder="Ulice, Město"></div>
+    <div class="form-group"><div class="form-label">Poznámky</div>
+      <textarea class="form-textarea" id="f-notes">${esc(c.notes||'')}</textarea></div>
+    ${photoEditHtml()}
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="cancelForm()">Zrušit</button>
+    <button class="btn btn-primary" onclick="saveCustomer()">Uložit</button>
+  </div>
+  ${isEdit?`<button class="btn btn-danger btn-full" onclick="deleteCustomer(${c.id})">🗑 Smazat zákazníka</button>`:''}
+  </div>`;
+}
+async function saveCustomer() {
+  const name=document.getElementById('f-name')?.value?.trim(); if(!name){toast('❗ Zadej jméno');return;}
+  const now=new Date().toISOString(), ex=S.customerId?await DB.get('customers',S.customerId):null;
+  const item={name, phone:document.getElementById('f-phone')?.value?.trim()||'', email:document.getElementById('f-email')?.value?.trim()||'', address:document.getElementById('f-address')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  if(S.customerId) item.id=S.customerId;
+  const id=await DB.put('customers',item);
+  await DB.put('customers',{...item,id,photos:await savePhotos('customers',id,S.editPhotos,ex?.photos||[])});
+  S.customerId=id; toast(ex?'✓ Uloženo':'✓ Zákazník přidán'); nav('customer-detail');
+}
+async function deleteCustomer(id) {
+  if(!confirm('Smazat zákazníka a vše co k němu patří?')) return;
+  const c=await DB.get('customers',id); for(const p of(c?.photos||[])) await OPFS.del(p);
+  for(const l of await DB.idx('locations','customerId',id)) {
+    for(const p of(l.photos||[])) await OPFS.del(p);
+    for(const d of await DB.idx('devices','locationId',l.id)) {
+      for(const p of(d.photos||[])) await OPFS.del(p);
+      for(const t of await DB.idx('tasks','deviceId',d.id)) { for(const p of(t.photos||[])) await OPFS.del(p); await DB.del('tasks',t.id); }
+      await DB.del('devices',d.id);
+    }
+    await DB.del('locations',l.id);
+  }
+  await DB.del('customers',id); toast('Zákazník smazán'); nav('customers',{customerId:null});
+}
+
+// ══════════════════════════════════════════════════════
+// LOCATIONS
+// ══════════════════════════════════════════════════════
+
+async function renderLocationDetail() {
+  const l=await DB.get('locations',S.locationId); if(!l){nav('customer-detail');return '';}
+  const devices=(await DB.idx('devices','locationId',S.locationId)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','cs'));
+  const photoURLs=await resolveURLs(l.photos);
+
+  const devRows=devices.length
+    ? devices.map(d=>`<div class="card" onclick="nav('device-detail',{deviceId:${d.id},locationId:${l.id},customerId:${l.customerId}})">
+        <div class="card-icon">🔥</div>
+        <div class="card-left">
+          <div class="card-title">${esc(d.name||d.type||'Zařízení')}</div>
+          <div class="card-sub">${[d.type,d.model].filter(Boolean).join(' · ')||'—'}</div>
+        </div><div class="card-chev">›</div></div>`).join('')
+    : `<div class="empty" style="padding:28px 20px"><div class="empty-icon" style="font-size:32px">🔥</div><div>Zatím žádná zařízení</div></div>`;
+
+  return `<div class="header">
+    <button class="btn-icon" onclick="nav('customer-detail')">‹</button>
+    <div class="header-title">${esc(l.address)}</div>
+    <button class="btn-icon accent" onclick="openLocationForm(${l.id})">✎</button>
+  </div>
+  ${breadcrumb({label:S._customer?.name||'Zákazník',view:'customer-detail'},{label:l.address})}
+  <div class="scroll">
+    <div class="sec-label">Lokace</div>
+    <div class="detail-block">
+      <div class="detail-row"><div class="d-label">📍 Adresa</div><div class="d-value">${esc(l.address)}${l.city?', '+esc(l.city):''}</div></div>
+      ${l.floor ?`<div class="detail-row"><div class="d-label">🏚 Umístění</div><div class="d-value">${esc(l.floor)}</div></div>`:''}
+      ${l.access?`<div class="detail-row"><div class="d-label">🔑 Přístup</div><div class="d-value">${esc(l.access)}</div></div>`:''}
+      ${l.notes ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(l.notes)}</div></div>`:''}
+    </div>
+    ${photoURLs.length?`<div class="sec-label">Fotky (${photoURLs.length})</div>${photoDisplayHtml(photoURLs)}`:''}
+    <div class="sec-label">Zařízení (${devices.length})</div>
+    <div class="list">${devRows}</div>
+  </div>
+  <button class="fab" onclick="openDeviceForm(null)">＋</button>`;
+}
+
+async function openLocationForm(id,cid) {
+  S.editPhotos=[];
+  if(id){ const l=await DB.get('locations',id); for(const p of(l.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); nav('location-form',{locationId:id}); }
+  else   nav('location-form',{locationId:null,customerId:cid||S.customerId});
+}
+async function renderLocationForm() {
+  const isEdit=!!S.locationId, l=isEdit?(await DB.get('locations',S.locationId)||{}):{};
+  return `<div class="header">
+    <button class="btn-icon" onclick="cancelForm()">✕</button>
+    <div class="header-title">${isEdit?'Upravit lokaci':'Nová lokace'}</div>
+    <div style="width:44px"></div>
+  </div>
+  <div class="scroll"><div class="form-body">
+    <div class="form-row">
+      <div class="form-group" style="flex:2"><div class="form-label">Ulice a číslo *</div>
+        <input class="form-input" id="f-address" type="text" value="${esc(l.address||'')}" placeholder="Ulice 42"></div>
+      <div class="form-group"><div class="form-label">Město</div>
+        <input class="form-input" id="f-city" type="text" value="${esc(l.city||'')}" placeholder="Praha"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Umístění / podlaží</div>
+      <input class="form-input" id="f-floor" type="text" value="${esc(l.floor||'')}" placeholder="Sklep, 1. PP"></div>
+    <div class="form-group"><div class="form-label">Přístup / klíče</div>
+      <input class="form-input" id="f-access" type="text" value="${esc(l.access||'')}" placeholder="Klíče u domovníka…"></div>
+    <div class="form-group"><div class="form-label">Poznámky</div>
+      <textarea class="form-textarea" id="f-notes">${esc(l.notes||'')}</textarea></div>
+    ${photoEditHtml()}
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="cancelForm()">Zrušit</button>
+    <button class="btn btn-primary" onclick="saveLocation()">Uložit</button>
+  </div>
+  ${isEdit?`<button class="btn btn-danger btn-full" onclick="deleteLocation(${l.id})">🗑 Smazat lokaci</button>`:''}
+  </div>`;
+}
+async function saveLocation() {
+  const address=document.getElementById('f-address')?.value?.trim(); if(!address){toast('❗ Zadej adresu');return;}
+  const now=new Date().toISOString(), ex=S.locationId?await DB.get('locations',S.locationId):null;
+  const item={customerId:ex?.customerId||S.customerId, address, city:document.getElementById('f-city')?.value?.trim()||'', floor:document.getElementById('f-floor')?.value?.trim()||'', access:document.getElementById('f-access')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  if(S.locationId) item.id=S.locationId;
+  const id=await DB.put('locations',item);
+  await DB.put('locations',{...item,id,photos:await savePhotos('locations',id,S.editPhotos,ex?.photos||[])});
+  S.locationId=id; toast('✓ Lokace uložena'); nav('location-detail');
+}
+async function deleteLocation(id) {
+  if(!confirm('Smazat lokaci a vše co k ní patří?')) return;
+  const l=await DB.get('locations',id); for(const p of(l?.photos||[])) await OPFS.del(p);
+  for(const d of await DB.idx('devices','locationId',id)) {
+    for(const p of(d.photos||[])) await OPFS.del(p);
+    for(const t of await DB.idx('tasks','deviceId',d.id)) { for(const p of(t.photos||[])) await OPFS.del(p); await DB.del('tasks',t.id); }
+    await DB.del('devices',d.id);
+  }
+  await DB.del('locations',id); toast('Lokace smazána'); nav('customer-detail',{locationId:null});
+}
+
+// ══════════════════════════════════════════════════════
+// DEVICES
+// ══════════════════════════════════════════════════════
+
+async function renderDeviceDetail() {
+  const d=await DB.get('devices',S.deviceId); if(!d){nav('location-detail');return '';}
+  const tasks=(await DB.idx('tasks','deviceId',S.deviceId)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const photoURLs=await resolveURLs(d.photos);
+
+  const taskRows=tasks.length
+    ? tasks.map(t=>{
+        const st=t.status||'nova';
+        return `<div class="card s-${st}" onclick="nav('task-detail',{taskId:${t.id},deviceId:${d.id},locationId:${d.locationId},customerId:${d.customerId}})">
+          <div class="card-left">
+            <div class="card-title">${esc(t.title||'Zakázka')}</div>
+            <div class="card-sub">${fmtDate(t.date)}${t.price?' · '+Number(t.price).toLocaleString('cs-CZ')+' Kč':''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <span class="badge badge-${st}">${STATUS[st]||st}</span>
+            <div class="card-chev">›</div>
+          </div></div>`;}).join('')
+    : `<div class="empty" style="padding:28px 20px"><div class="empty-icon" style="font-size:32px">🔧</div><div>Zatím žádné zakázky</div></div>`;
+
+  return `<div class="header">
+    <button class="btn-icon" onclick="nav('location-detail')">‹</button>
+    <div class="header-title">${esc(d.name||d.type||'Zařízení')}</div>
+    <button class="btn-icon accent" onclick="openDeviceForm(${d.id})">✎</button>
+  </div>
+  ${breadcrumb({label:S._customer?.name,view:'customer-detail'},{label:S._location?.address,view:'location-detail'},{label:d.name||d.type||'Zařízení'})}
+  <div class="scroll">
+    <div class="sec-label">Zařízení</div>
+    <div class="detail-block">
+      ${d.name    ?`<div class="detail-row"><div class="d-label">🏷 Název</div><div class="d-value">${esc(d.name)}</div></div>`:''}
+      ${d.type    ?`<div class="detail-row"><div class="d-label">🔥 Typ</div><div class="d-value">${esc(d.type)}</div></div>`:''}
+      ${d.model   ?`<div class="detail-row"><div class="d-label">📦 Model</div><div class="d-value">${esc(d.model)}</div></div>`:''}
+      ${d.serial  ?`<div class="detail-row"><div class="d-label">🔢 S/N</div><div class="d-value">${esc(d.serial)}</div></div>`:''}
+      ${d.year    ?`<div class="detail-row"><div class="d-label">📅 Rok výroby</div><div class="d-value">${esc(d.year)}</div></div>`:''}
+      ${d.power   ?`<div class="detail-row"><div class="d-label">⚡ Výkon</div><div class="d-value">${esc(d.power)}</div></div>`:''}
+      ${d.notes   ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(d.notes)}</div></div>`:''}
+    </div>
+    ${photoURLs.length?`<div class="sec-label">Fotky zařízení (${photoURLs.length})</div>${photoDisplayHtml(photoURLs)}`:''}
+    <div class="sec-label">Zakázky (${tasks.length})</div>
+    <div class="list">${taskRows}</div>
+  </div>
+  <button class="fab" onclick="openTaskForm(null)">＋</button>`;
+}
+
+async function openDeviceForm(id) {
+  S.editPhotos=[];
+  if(id){ const d=await DB.get('devices',id); for(const p of(d.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); }
+  nav('device-form',{deviceId:id});
+}
+async function renderDeviceForm() {
+  const isEdit=!!S.deviceId, d=isEdit?(await DB.get('devices',S.deviceId)||{}):{};
+  return `<div class="header">
+    <button class="btn-icon" onclick="cancelForm()">✕</button>
+    <div class="header-title">${isEdit?'Upravit zařízení':'Nové zařízení'}</div>
+    <div style="width:44px"></div>
+  </div>
+  <div class="scroll"><div class="form-body">
+    <div class="form-group"><div class="form-label">Název / označení</div>
+      <input class="form-input" id="f-name" type="text" value="${esc(d.name||'')}" placeholder="Kotel v suterénu"></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Typ zařízení *</div>
+        <input class="form-input" id="f-type" type="text" value="${esc(d.type||'')}" placeholder="Kondenzační kotel"></div>
+      <div class="form-group"><div class="form-label">Výrobce / model</div>
+        <input class="form-input" id="f-model" type="text" value="${esc(d.model||'')}" placeholder="Buderus GB172"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Sériové číslo</div>
+        <input class="form-input" id="f-serial" type="text" value="${esc(d.serial||'')}" placeholder="SN123456"></div>
+      <div class="form-group"><div class="form-label">Rok výroby</div>
+        <input class="form-input" id="f-year" type="text" value="${esc(d.year||'')}" placeholder="2018"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Výkon / parametry</div>
+      <input class="form-input" id="f-power" type="text" value="${esc(d.power||'')}" placeholder="24 kW, zemní plyn"></div>
+    <div class="form-group"><div class="form-label">Poznámky</div>
+      <textarea class="form-textarea" id="f-notes">${esc(d.notes||'')}</textarea></div>
+    ${photoEditHtml()}
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="cancelForm()">Zrušit</button>
+    <button class="btn btn-primary" onclick="saveDevice()">Uložit</button>
+  </div>
+  ${isEdit?`<button class="btn btn-danger btn-full" onclick="deleteDevice(${d.id})">🗑 Smazat zařízení</button>`:''}
+  </div>`;
+}
+async function saveDevice() {
+  const type=document.getElementById('f-type')?.value?.trim(); if(!type){toast('❗ Zadej typ zařízení');return;}
+  const now=new Date().toISOString(), ex=S.deviceId?await DB.get('devices',S.deviceId):null;
+  const item={locationId:ex?.locationId||S.locationId, customerId:ex?.customerId||S.customerId, name:document.getElementById('f-name')?.value?.trim()||'', type, model:document.getElementById('f-model')?.value?.trim()||'', serial:document.getElementById('f-serial')?.value?.trim()||'', year:document.getElementById('f-year')?.value?.trim()||'', power:document.getElementById('f-power')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  if(S.deviceId) item.id=S.deviceId;
+  const id=await DB.put('devices',item);
+  await DB.put('devices',{...item,id,photos:await savePhotos('devices',id,S.editPhotos,ex?.photos||[])});
+  S.deviceId=id; toast(ex?'✓ Zařízení uloženo':'✓ Zařízení přidáno'); nav('device-detail');
+}
+async function deleteDevice(id) {
+  if(!confirm('Smazat zařízení a všechny zakázky?')) return;
+  const d=await DB.get('devices',id); for(const p of(d?.photos||[])) await OPFS.del(p);
+  for(const t of await DB.idx('tasks','deviceId',id)) { for(const p of(t.photos||[])) await OPFS.del(p); await DB.del('tasks',t.id); }
+  await DB.del('devices',id); toast('Zařízení smazáno'); nav('location-detail',{deviceId:null});
+}
+
+// ══════════════════════════════════════════════════════
+// TASKS
+// ══════════════════════════════════════════════════════
+
+async function renderTaskDetail() {
+  const t=await DB.get('tasks',S.taskId); if(!t){nav('device-detail');return '';}
+  const st=t.status||'nova';
+  const photoURLs=await resolveURLs(t.photos);
+  return `<div class="header">
+    <button class="btn-icon" onclick="nav('device-detail')">‹</button>
+    <div class="header-title">${esc(t.title||'Zakázka')}</div>
+    <button class="btn-icon accent" onclick="openTaskForm(${t.id})">✎</button>
+  </div>
+  ${breadcrumb({label:S._customer?.name,view:'customer-detail'},{label:S._location?.address,view:'location-detail'},{label:S._device?.name||S._device?.type||'Zařízení',view:'device-detail'},{label:t.title||fmtDate(t.date)})}
+  <div class="scroll">
+    <div style="padding:14px 16px">
+      <span class="badge badge-${st}" style="font-size:14px;padding:6px 18px">${STATUS[st]||st}</span>
+    </div>
+    <div class="detail-block">
+      <div class="detail-row"><div class="d-label">📅 Datum</div><div class="d-value">${fmtDate(t.date)}</div></div>
+      ${t.title      ?`<div class="detail-row"><div class="d-label">🔧 Název</div><div class="d-value">${esc(t.title)}</div></div>`:''}
+      ${t.repairType ?`<div class="detail-row"><div class="d-label">⚙ Typ práce</div><div class="d-value">${esc(t.repairType)}</div></div>`:''}
+      ${t.price      ?`<div class="detail-row"><div class="d-label">💰 Cena</div><div class="d-value price-accent">${fmtPrice(t.price)}</div></div>`:''}
+      ${t.description?`<div class="detail-row"><div class="d-label">📋 Popis</div><div class="d-value" style="white-space:pre-wrap">${esc(t.description)}</div></div>`:''}
+      ${t.parts      ?`<div class="detail-row"><div class="d-label">🔩 Díly</div><div class="d-value" style="white-space:pre-wrap">${esc(t.parts)}</div></div>`:''}
+      ${t.nextService?`<div class="detail-row"><div class="d-label">📆 Příští servis</div><div class="d-value">${fmtDate(t.nextService)}</div></div>`:''}
+      ${t.notes      ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(t.notes)}</div></div>`:''}
+    </div>
+    ${photoURLs.length?`<div class="sec-label">Fotky (${photoURLs.length})</div>${photoDisplayHtml(photoURLs)}`:''}
+  </div>`;
+}
+
+async function openTaskForm(id) {
+  S.editPhotos=[];
+  if(id){ const t=await DB.get('tasks',id); for(const p of(t.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); }
+  nav('task-form',{taskId:id});
+}
+async function renderTaskForm() {
+  const isEdit=!!S.taskId, t=isEdit?(await DB.get('tasks',S.taskId)||{}):{};
+  const today=new Date().toISOString().split('T')[0];
+  const statuses=[{v:'nova',l:'Nová'},{v:'probiha',l:'Probíhá'},{v:'dokoncena',l:'Dokončena'},{v:'ceka',l:'Čeká na díl'}];
+  const repairTypes=['Pravidelná revize','Výměna dílu','Oprava poruchy','Uvedení do provozu','Čištění','Jiné'];
+  return `<div class="header">
+    <button class="btn-icon" onclick="cancelForm()">✕</button>
+    <div class="header-title">${isEdit?'Upravit zakázku':'Nová zakázka'}</div>
+    <div style="width:44px"></div>
+  </div>
+  <div class="scroll"><div class="form-body">
+    <div class="form-group"><div class="form-label">Název zakázky</div>
+      <input class="form-input" id="f-title" type="text" value="${esc(t.title||'')}" placeholder="Výměna hořáku, revize…"></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Datum *</div>
+        <input class="form-input" id="f-date" type="date" value="${t.date||today}"></div>
+      <div class="form-group"><div class="form-label">Stav</div>
+        <select class="form-select" id="f-status">
+          ${statuses.map(s=>`<option value="${s.v}" ${(t.status||'nova')===s.v?'selected':''}>${s.l}</option>`).join('')}
+        </select></div>
+    </div>
+    <div class="form-group"><div class="form-label">Typ práce</div>
+      <select class="form-select" id="f-repairType">
+        <option value="">— vybrat —</option>
+        ${repairTypes.map(r=>`<option value="${r}" ${t.repairType===r?'selected':''}>${r}</option>`).join('')}
+      </select></div>
+    <div class="form-group"><div class="form-label">Popis provedené práce</div>
+      <textarea class="form-textarea" id="f-description" placeholder="Co bylo provedeno…">${esc(t.description||'')}</textarea></div>
+    <div class="form-group"><div class="form-label">Použité díly / materiál</div>
+      <textarea class="form-textarea" id="f-parts" placeholder="Hořák XYZ, těsnění 40mm…">${esc(t.parts||'')}</textarea></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Cena (Kč)</div>
+        <input class="form-input" id="f-price" type="number" value="${esc(t.price||'')}" placeholder="0"></div>
+      <div class="form-group"><div class="form-label">Příští servis</div>
+        <input class="form-input" id="f-nextService" type="date" value="${t.nextService||''}"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Poznámky</div>
+      <textarea class="form-textarea" id="f-notes">${esc(t.notes||'')}</textarea></div>
+    ${photoEditHtml()}
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="cancelForm()">Zrušit</button>
+    <button class="btn btn-primary" onclick="saveTask()">Uložit</button>
+  </div>
+  ${isEdit?`<button class="btn btn-danger btn-full" onclick="deleteTask(${t.id})">🗑 Smazat zakázku</button>`:''}
+  </div>`;
+}
+async function saveTask() {
+  const date=document.getElementById('f-date')?.value; if(!date){toast('❗ Zadej datum');return;}
+  const now=new Date().toISOString(), ex=S.taskId?await DB.get('tasks',S.taskId):null;
+  const priceRaw=document.getElementById('f-price')?.value?.trim();
+  const item={deviceId:ex?.deviceId||S.deviceId, locationId:ex?.locationId||S.locationId, customerId:ex?.customerId||S.customerId, date, title:document.getElementById('f-title')?.value?.trim()||'', status:document.getElementById('f-status')?.value||'nova', repairType:document.getElementById('f-repairType')?.value||'', description:document.getElementById('f-description')?.value?.trim()||'', parts:document.getElementById('f-parts')?.value?.trim()||'', price:priceRaw?Number(priceRaw):null, nextService:document.getElementById('f-nextService')?.value||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  if(S.taskId) item.id=S.taskId;
+  const id=await DB.put('tasks',item);
+  await DB.put('tasks',{...item,id,photos:await savePhotos('tasks',id,S.editPhotos,ex?.photos||[])});
+  S.taskId=id; toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
+}
+async function deleteTask(id) {
+  if(!confirm('Smazat zakázku?')) return;
+  const t=await DB.get('tasks',id); for(const p of(t?.photos||[])) await OPFS.del(p);
+  await DB.del('tasks',id); toast('Zakázka smazána'); nav('device-detail',{taskId:null});
+}
+
+// ══════════════════════════════════════════════════════
+// CALENDAR
+// ══════════════════════════════════════════════════════
+
+async function renderCalendar() {
+  const c = S.cal;
+  const allTasks     = await DB.all('tasks');
+  const allCustomers = await DB.all('customers');
+  const allLocations = await DB.all('locations');
+  const allDevices   = await DB.all('devices');
+
+  const custMap = Object.fromEntries(allCustomers.map(x=>[x.id,x]));
+  const locMap  = Object.fromEntries(allLocations.map(x=>[x.id,x]));
+  const devMap  = Object.fromEntries(allDevices.map(x=>[x.id,x]));
+
+  const filterCusts = allCustomers.sort((a,b)=>(a.name||'').localeCompare(b.name||'','cs'));
+  const filterLocs  = allLocations.filter(l => !c.filterCustomerId || l.customerId==c.filterCustomerId)
+    .sort((a,b)=>(a.address||'').localeCompare(b.address||'','cs'));
+  const filterDevs  = allDevices.filter(d => {
+    if (c.filterLocationId && d.locationId!=c.filterLocationId) return false;
+    if (c.filterCustomerId && d.customerId!=c.filterCustomerId) return false;
+    return true;
+  }).sort((a,b)=>(a.name||a.type||'').localeCompare(b.name||b.type||'','cs'));
+
+  let filtered = allTasks.filter(t => {
+    if (c.filterCustomerId && t.customerId!=c.filterCustomerId) return false;
+    if (c.filterLocationId && t.locationId!=c.filterLocationId) return false;
+    if (c.filterDeviceId   && t.deviceId!=c.filterDeviceId)     return false;
+    if (c.filterStatus     && t.status!==c.filterStatus)         return false;
+    return true;
+  });
+
+  const dateMap = {};
+  for (const t of filtered) {
+    if (!t.date) continue;
+    if (!dateMap[t.date]) dateMap[t.date] = [];
+    dateMap[t.date].push(t);
+  }
+
+  const year=c.year, month=c.month;
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month+1, 0);
+  let startDow = (firstDay.getDay()+6)%7;
+  const MONTHS_CS = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+  const DOW = ['Po','Út','St','Čt','Pá','So','Ne'];
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  let cells = '';
+  for (let i=0;i<startDow;i++) {
+    const d = new Date(year,month,1-startDow+i);
+    const ds = d.toISOString().split('T')[0];
+    cells += calCell(ds, d.getDate(), true, dateMap, c.selectedDate, todayStr);
+  }
+  for (let d=1;d<=lastDay.getDate();d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells += calCell(ds, d, false, dateMap, c.selectedDate, todayStr);
+  }
+  const remaining = (7 - (startDow+lastDay.getDate())%7) % 7;
+  for (let i=1;i<=remaining;i++) {
+    const d = new Date(year,month+1,i);
+    const ds = d.toISOString().split('T')[0];
+    cells += calCell(ds, i, true, dateMap, c.selectedDate, todayStr);
+  }
+
+  let listTasks = c.selectedDate ? (dateMap[c.selectedDate]||[]) : filtered;
+  listTasks = [...listTasks].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+
+  const now = todayStr;
+  const upcoming = listTasks.filter(t=>t.date>=now);
+  const past     = listTasks.filter(t=>t.date<now).reverse();
+
+  function taskCard(t) {
+    const st=t.status||'nova';
+    const dev=devMap[t.deviceId], loc=locMap[t.locationId], cust=custMap[t.customerId];
+    const path=[cust?.name, loc?.address, dev?.name||dev?.type].filter(Boolean).join(' › ');
+    return `<div class="cal-task-card s-${st}" onclick="openTaskFromCalendar(${t.id})">
+      <div class="cal-task-top">
+        <div class="cal-task-date">${fmtDate(t.date)}</div>
+        <div class="cal-task-title">${esc(t.title||'Zakázka')}</div>
+        <span class="badge badge-${st}" style="font-size:11px;padding:2px 8px">${STATUS[st]||st}</span>
+      </div>
+      <div class="cal-task-path">${esc(path)}</div>
+      ${(t.price||t.repairType)?`<div class="cal-task-bottom">
+        <span style="font-size:12px;color:var(--muted)">${esc(t.repairType||'')}</span>
+        ${t.price?`<span class="cal-task-price">${Number(t.price).toLocaleString('cs-CZ')} Kč</span>`:''}
+      </div>`:''}
+    </div>`;
+  }
+
+  const hasFilter = c.filterCustomerId||c.filterLocationId||c.filterDeviceId||c.filterStatus;
+  const selectedLabel = c.selectedDate
+    ? `${new Date(c.selectedDate+'T12:00:00').toLocaleDateString('cs-CZ',{day:'numeric',month:'long'})}`
+    : 'Vše';
+
+  return `
+    <div class="header">
+      <div style="width:44px"></div>
+      <div class="header-title">📅 Kalendář</div>
+      <button class="btn-icon accent" onclick="showBackupPanel()" title="Záloha">⇅</button>
+    </div>
+    <div class="scroll" style="padding-bottom:70px">
+
+      <div class="cal-filters">
+        <div class="cal-filter-row">
+          <select class="cal-filter-select" onchange="S.cal.filterCustomerId=this.value;S.cal.filterLocationId='';S.cal.filterDeviceId='';render()">
+            <option value="">Všichni zákazníci</option>
+            ${filterCusts.map(x=>`<option value="${x.id}" ${c.filterCustomerId==x.id?'selected':''}>${esc(x.name)}</option>`).join('')}
+          </select>
+          <select class="cal-filter-select" onchange="S.cal.filterStatus=this.value;render()">
+            <option value="">Všechny stavy</option>
+            ${Object.entries(STATUS).map(([v,l])=>`<option value="${v}" ${c.filterStatus===v?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="cal-filter-row">
+          <select class="cal-filter-select" onchange="S.cal.filterLocationId=this.value;S.cal.filterDeviceId='';render()">
+            <option value="">Všechny lokace</option>
+            ${filterLocs.map(x=>`<option value="${x.id}" ${c.filterLocationId==x.id?'selected':''}>${esc(x.address)}${x.city?', '+x.city:''}</option>`).join('')}
+          </select>
+          <select class="cal-filter-select" onchange="S.cal.filterDeviceId=this.value;render()">
+            <option value="">Všechna zařízení</option>
+            ${filterDevs.map(x=>`<option value="${x.id}" ${c.filterDeviceId==x.id?'selected':''}>${esc(x.name||x.type)}</option>`).join('')}
+          </select>
+        </div>
+        ${hasFilter||c.selectedDate?`<div style="display:flex;justify-content:flex-end">
+          <button class="cal-filter-clear" onclick="S.cal.filterCustomerId='';S.cal.filterLocationId='';S.cal.filterDeviceId='';S.cal.filterStatus='';S.cal.selectedDate=null;render()">✕ Zrušit filtry</button>
+        </div>`:''}
+      </div>
+
+      <div class="month-nav">
+        <button class="month-btn" onclick="calPrevMonth()">‹</button>
+        <div class="month-label">${MONTHS_CS[month]} ${year}</div>
+        <button class="month-btn" onclick="calNextMonth()">›</button>
+      </div>
+
+      <div class="cal-grid">
+        ${DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+        ${cells}
+      </div>
+
+      ${upcoming.length ? `
+        <div class="cal-divider">Nadcházející${c.selectedDate?' – '+selectedLabel:''} (${upcoming.length})</div>
+        ${upcoming.map(taskCard).join('')}` : ''}
+
+      ${past.length ? `
+        <div class="cal-divider">Minulé${c.selectedDate?' – '+selectedLabel:''} (${past.length})</div>
+        ${past.map(taskCard).join('')}` : ''}
+
+      ${!upcoming.length && !past.length ? `
+        <div class="empty" style="padding:30px 20px">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">Žádné zakázky</div>
+          <div>${hasFilter||c.selectedDate?'Zkus jiný filtr nebo datum':'Přidej první zakázku přes zařízení'}</div>
+        </div>` : ''}
+    </div>`;
+}
+
+function calCell(ds, dayNum, otherMonth, dateMap, selectedDate, todayStr) {
+  const tasks = dateMap[ds]||[];
+  const dots  = tasks.slice(0,4).map(t=>`<div class="cal-dot dot-${t.status||'nova'}"></div>`).join('');
+  const cls   = [
+    'cal-day',
+    otherMonth?'other-month':'',
+    ds===todayStr?'today':'',
+    ds===selectedDate?'selected':''
+  ].filter(Boolean).join(' ');
+  return `<div class="${cls}" onclick="calSelectDate('${ds}')">
+    <div class="cal-day-num">${dayNum}</div>
+    ${dots?`<div class="cal-dots">${dots}</div>`:''}
+  </div>`;
+}
+
+function calSelectDate(ds) {
+  S.cal.selectedDate = S.cal.selectedDate===ds ? null : ds;
+  render();
+}
+function calPrevMonth() {
+  if(S.cal.month===0){S.cal.month=11;S.cal.year--;}else S.cal.month--;
+  S.cal.selectedDate=null; render();
+}
+function calNextMonth() {
+  if(S.cal.month===11){S.cal.month=0;S.cal.year++;}else S.cal.month++;
+  S.cal.selectedDate=null; render();
+}
+
+async function openTaskFromCalendar(taskId) {
+  const t=await DB.get('tasks',taskId);
+  if(!t) return;
+  S.customerId=t.customerId; S.locationId=t.locationId; S.deviceId=t.deviceId; S.taskId=taskId;
+  S._customer=await DB.get('customers',t.customerId);
+  S._location=await DB.get('locations',t.locationId);
+  S._device  =await DB.get('devices',  t.deviceId);
+  S.tab='customers';
+  S.view='task-detail';
+  clearCache();
+  document.getElementById('app').innerHTML = await renderTaskDetail() + bottomNav();
+}
+
+// ══════════════════════════════════════════════════════
+// BACKUP
+// ══════════════════════════════════════════════════════
+
+function showBackupPanel() {
+  document.getElementById('backup-overlay')?.remove();
+  const ov=document.createElement('div'); ov.id='backup-overlay'; ov.className='backup-overlay';
+  ov.innerHTML=`<div class="backup-sheet">
+    <div class="backup-handle"></div>
+    <div class="backup-title"><span>Kotlo</span>CRM – Záloha</div>
+    <div class="backup-actions">
+      <button class="backup-btn" onclick="exportBackup()">
+        <div class="backup-btn-icon">⬇</div>
+        <div><div class="backup-btn-label">Exportovat zálohu (.zip)</div>
+             <div class="backup-btn-desc">JSON metadata + fotky jako soubory</div></div>
+      </button>
+      <button class="backup-btn" onclick="document.getElementById('importInput').click()">
+        <div class="backup-btn-icon">⬆</div>
+        <div><div class="backup-btn-label">Importovat zálohu (.zip)</div>
+             <div class="backup-btn-desc">Data se přidají, ID se přemapují</div></div>
+      </button>
+      <button class="backup-btn" onclick="exportBackup('gdrive')">
+        <div class="backup-btn-icon">🌐</div>
+        <div><div class="backup-btn-label">Export → Google Drive</div>
+             <div class="backup-btn-desc">Stáhne ZIP a otevře Drive</div></div>
+      </button>
+    </div>
+    <div class="backup-info">💡 Fotky jsou uloženy jako soubory (OPFS). ZIP záloha je kompaktní a přenositelná.</div>
+    <div id="backup-progress" style="display:none;padding:10px 0 4px">
+      <div class="progress-bar-wrap"><div class="progress-bar" id="backup-bar" style="width:0%"></div></div>
+      <div style="text-align:center;font-size:12px;color:var(--muted);padding:6px 14px 0" id="backup-status"></div>
+    </div>
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+
+function setProgress(pct,msg) {
+  const p=document.getElementById('backup-progress'); if(!p)return;
+  p.style.display='block';
+  const b=document.getElementById('backup-bar'); if(b)b.style.width=pct+'%';
+  const s=document.getElementById('backup-status'); if(s)s.textContent=msg;
+}
+
+async function exportBackup(mode) {
+  try {
+    if(typeof JSZip==='undefined'){toast('❗ JSZip se načítá');return;}
+    setProgress(5,'Načítám záznamy…');
+    const [customers,locations,devices,tasks]=await Promise.all([DB.all('customers'),DB.all('locations'),DB.all('devices'),DB.all('tasks')]);
+    setProgress(15,'Čtu fotky z disku…');
+    const allFiles=await OPFS.listAll();
+    const zip=new JSZip(), pf=zip.folder('photos');
+    let loaded=0;
+    for(const {path,handle} of allFiles){
+      const file=await handle.getFile();
+      pf.file(path,new Uint8Array(await file.arrayBuffer()),{binary:true});
+      loaded++;
+      setProgress(15+Math.round(loaded/Math.max(allFiles.length,1)*55),`Fotky… ${loaded}/${allFiles.length}`);
+    }
+    setProgress(72,'Sestavuji data.json…');
+    zip.file('data.json',JSON.stringify({
+      version:4,format:'zip-opfs-v1',exportedAt:new Date().toISOString(),app:'KotloCRM',
+      counts:{customers:customers.length,locations:locations.length,devices:devices.length,tasks:tasks.length,photos:allFiles.length},
+      data:{customers,locations,devices,tasks}
+    },null,2));
+    setProgress(80,'Generuji ZIP…');
+    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}},
+      m=>setProgress(80+Math.round(m.percent*.18),`Komprimuji… ${Math.round(m.percent)}%`));
+    const date=new Date().toISOString().split('T')[0];
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=`kotlocrm-zaloha-${date}.zip`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    const mb=(blob.size/1024/1024).toFixed(1);
+    setProgress(100,`✓ Hotovo – ${customers.length} zákazníků, ${devices.length} zařízení, ${tasks.length} zakázek, ${allFiles.length} fotek, ${mb} MB`);
+    toast(`✓ Záloha uložena (${mb} MB)`);
+    if(mode==='gdrive') setTimeout(()=>window.open('https://drive.google.com/drive/my-drive','_blank'),1200);
+    setTimeout(()=>document.getElementById('backup-overlay')?.remove(),3500);
+  } catch(e){console.error(e);toast('❗ Export selhal: '+e.message);}
+}
+
+async function importBackup(file) {
+  try {
+    if(!file.name.endsWith('.zip')){toast('❗ Vyber .zip soubor');return;}
+    if(typeof JSZip==='undefined'){toast('❗ JSZip se načítá');return;}
+    setProgress(5,'Čtu ZIP…');
+    const zip=await JSZip.loadAsync(await file.arrayBuffer());
+    setProgress(15,'Načítám data.json…');
+    const jf=zip.file('data.json'); if(!jf){toast('❗ Chybí data.json');return;}
+    const backup=JSON.parse(await jf.async('string'));
+    if(!backup?.data?.customers){toast('❗ Neplatný soubor');return;}
+
+    const blobs={};
+    const photoKeys=Object.keys(zip.files).filter(n=>n.startsWith('photos/')&&!zip.files[n].dir);
+    let i=0;
+    for(const full of photoKeys){
+      const rel=full.replace(/^photos\//,'');
+      blobs[rel]=new Blob([await zip.files[full].async('uint8array')],{type:full.endsWith('.png')?'image/png':'image/jpeg'});
+      i++; setProgress(15+Math.round(i/Math.max(photoKeys.length,1)*30),`Fotky… ${i}/${photoKeys.length}`);
+    }
+
+    const {customers=[],locations=[],devices=[],tasks=[]}=backup.data;
+    const cMap={},lMap={},dMap={};
+
+    async function writePhotos(oldPaths,sub,newId){
+      const res=[];
+      for(const op of(oldPaths||[])){
+        const blob=blobs[op]; if(!blob)continue;
+        const ext=blob.type==='image/png'?'png':'jpg';
+        res.push(await OPFS.write(sub,`${sub.slice(0,-1)}_${newId}_${Date.now()}_${res.length}.${ext}`,blob));
+      }
+      return res;
+    }
+
+    setProgress(50,'Zákazníci…');
+    for(const c of customers){
+      const oldId=c.id,nc={...c,photos:[]};delete nc.id;
+      const newId=await DB.put('customers',nc);
+      await DB.put('customers',{...nc,id:newId,photos:await writePhotos(c.photos,'customers',newId)});
+      cMap[oldId]=newId;
+    }
+    setProgress(63,'Lokace…');
+    for(const l of locations){
+      const oldId=l.id,nl={...l,customerId:cMap[l.customerId]||l.customerId,photos:[]};delete nl.id;
+      const newId=await DB.put('locations',nl);
+      await DB.put('locations',{...nl,id:newId,photos:await writePhotos(l.photos,'locations',newId)});
+      lMap[oldId]=newId;
+    }
+    setProgress(76,'Zařízení…');
+    for(const d of devices){
+      const oldId=d.id,nd={...d,locationId:lMap[d.locationId]||d.locationId,customerId:cMap[d.customerId]||d.customerId,photos:[]};delete nd.id;
+      const newId=await DB.put('devices',nd);
+      await DB.put('devices',{...nd,id:newId,photos:await writePhotos(d.photos,'devices',newId)});
+      dMap[oldId]=newId;
+    }
+    setProgress(88,'Zakázky…');
+    for(const t of tasks){
+      const nt={...t,deviceId:dMap[t.deviceId]||t.deviceId,locationId:lMap[t.locationId]||t.locationId,customerId:cMap[t.customerId]||t.customerId,photos:[]};delete nt.id;
+      const newId=await DB.put('tasks',nt);
+      await DB.put('tasks',{...nt,id:newId,photos:await writePhotos(t.photos,'tasks',newId)});
+    }
+    setProgress(100,`✓ ${customers.length} zákazníků, ${devices.length} zařízení, ${tasks.length} zakázek`);
+    toast(`✓ Import hotov – ${customers.length} zákazníků`);
+    setTimeout(()=>{document.getElementById('backup-overlay')?.remove();nav('customers');},2000);
+  } catch(e){console.error(e);toast('❗ Import selhal: '+(e.message||'Neplatný soubor'));}
+}
+
+document.getElementById('importInput').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;e.target.value='';
+  if(!document.getElementById('backup-overlay'))showBackupPanel();
+  await importBackup(f);
+});
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+
+(async()=>{
+  try{
+    await openDB();
+    await OPFS.init();
+    if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }catch(e){console.error('Init:',e);}
+  document.getElementById('loading').style.display='none';
+  await render();
+})();
+</script>
+</body>
+</html>
