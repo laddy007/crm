@@ -1388,9 +1388,12 @@ async function driveUploadFile(token,folderId,name,blobOrBuf,mimeType,existingId
   form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
   form.append('file',new Blob([blobOrBuf],{type:mimeType}));
   const url=existingId
-    ?`https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
-    :`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-  await _driveReq(token,existingId?'PATCH':'POST',url,form);
+    ?`https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart&fields=id,size`
+    :`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,size`;
+  const res=await _driveReq(token,existingId?'PATCH':'POST',url,form);
+  const data=await res.json();
+  if(!data.id) throw new Error('Drive nevrátil fileId');
+  return data.id; // confirmed by Drive
 }
 
 async function driveDeleteFile(token,fileId) {
@@ -1432,26 +1435,30 @@ async function syncToDrive() {
     const toUpload=localFiles.filter(f=>!driveFiles[f.path.replace(/\//g,'|')]);
     const toDelete=Object.keys(drivePhotos).filter(n=>!localPathSet.has(n.replace(/\|/g,'/')));
 
-    // upload new photos
-    let up=0;
+    // upload new photos – continue on individual failures, collect errors
+    let upOk=0; const upFailed=[];
     for(const {path,handle} of toUpload){
-      const file=await handle.getFile();
-      const driveName=path.replace(/\//g,'|');
-      await driveUploadFile(token,folderId,driveName,await file.arrayBuffer(),
-        file.name.endsWith('.png')?'image/png':'image/jpeg');
-      up++;
-      setProgress(20+Math.round(up/Math.max(toUpload.length,1)*45),`Nahrávám fotky… ${up}/${toUpload.length}`);
+      try {
+        const file=await handle.getFile();
+        const driveName=path.replace(/\//g,'|');
+        await driveUploadFile(token,folderId,driveName,await file.arrayBuffer(),
+          file.name.endsWith('.png')?'image/png':'image/jpeg');
+        upOk++;
+      } catch(e){ upFailed.push(path); console.warn('Upload failed:',path,e.message); }
+      setProgress(20+Math.round((upOk+upFailed.length)/Math.max(toUpload.length,1)*45),
+        `Fotky… ${upOk+upFailed.length}/${toUpload.length}${upFailed.length?` ⚠${upFailed.length}`:''}`);
     }
 
-    // delete removed photos
-    let del=0;
+    // delete removed photos – continue on individual failures
+    let delOk=0; const delFailed=[];
     for(const name of toDelete){
-      await driveDeleteFile(token,drivePhotos[name]);
-      del++;
-      setProgress(65+Math.round(del/Math.max(toDelete.length,1)*10),`Mažu z Drive… ${del}/${toDelete.length}`);
+      try { await driveDeleteFile(token,drivePhotos[name]); delOk++; }
+      catch(e){ delFailed.push(name); console.warn('Delete failed:',name,e.message); }
+      setProgress(65+Math.round((delOk+delFailed.length)/Math.max(toDelete.length,1)*10),
+        `Mažu z Drive… ${delOk+delFailed.length}/${toDelete.length}`);
     }
 
-    // upload data.json
+    // upload data.json – critical, throws on failure
     setProgress(77,'Nahrávám data.json…');
     const dataJson=JSON.stringify({
       version:4,format:'drive-sync-v1',syncedAt:new Date().toISOString(),app:'KotloCRM',
@@ -1462,9 +1469,13 @@ async function syncToDrive() {
       new TextEncoder().encode(dataJson),'application/json',driveFiles['data.json']);
 
     localStorage.setItem('gdrive_last_sync',new Date().toISOString());
-    setProgress(100,`✓ Sync hotov – ${customers.length} zákazníků, ${tasks.length} zakázek · +${toUpload.length} ↑ −${toDelete.length} fotek`);
-    toast('✓ Drive sync dokončen');
-    setTimeout(()=>document.getElementById('backup-overlay')?.remove(),3500);
+    const warn=upFailed.length||delFailed.length;
+    const summary=`${customers.length} zákazníků, ${tasks.length} zakázek · ↑${upOk}/${toUpload.length} fotek`
+      +(delOk||delFailed.length?` · ↓${delOk} smazáno`:'')
+      +(warn?` · ⚠ ${upFailed.length+delFailed.length} chyb`:'');
+    setProgress(100,(warn?'⚠ Sync s chybami – ':'✓ Sync hotov – ')+summary);
+    toast(warn?`⚠ Sync dokončen, ${upFailed.length+delFailed.length} fotek selhalo`:'✓ Drive sync dokončen');
+    setTimeout(()=>document.getElementById('backup-overlay')?.remove(),warn?6000:3500);
   } catch(e){console.error(e);toast('❗ Sync selhal: '+e.message);}
 }
 
