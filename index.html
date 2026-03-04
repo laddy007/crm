@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.7'; // bump při každém nasazení
+const APP_VERSION = '1.3.8'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -949,7 +949,13 @@ async function saveTask() {
       if('gcalEventId' in gcalIds && gcalIds.gcalEventId!==savedItem.gcalEventId) upd.gcalEventId=gcalIds.gcalEventId;
       if('gcalNextServiceEventId' in gcalIds && gcalIds.gcalNextServiceEventId!==savedItem.gcalNextServiceEventId) upd.gcalNextServiceEventId=gcalIds.gcalNextServiceEventId;
       if(Object.keys(upd).length) await DB.put('tasks',{...savedItem,...upd});
-    } catch(e){console.error('GCal sync error:',e);gcalPendingAdd({op:'upsert',taskId:id});toast('⚠ Google Kalendář: '+((e?.message||'chyba').slice(0,60)));}
+    } catch(e){
+      console.error('GCal sync error:',e);
+      gcalPendingAdd({op:'upsert',taskId:id});
+      let em=e?.message||'chyba';
+      try{const j=JSON.parse(em);em=j?.error?.message||em;}catch(x){}
+      toast('⚠ Google Kalendář: '+em.slice(0,100));
+    }
   }
   toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
 }
@@ -1615,7 +1621,7 @@ async function _gcalUpsertEvent(token,eventId,eventBody) {
   return (await res.json()).id||null;
 }
 
-// Vrací { gcalEventId?, gcalNextServiceEventId? }
+// Vrací { gcalEventId?, gcalNextServiceEventId? }; při chybě jedné operace zachová výsledek druhé
 async function gcalCreateOrUpdateEvent(task) {
   if(!task.date && !task.nextService) return {};
   const token=await getDriveToken();
@@ -1625,15 +1631,19 @@ async function gcalCreateOrUpdateEvent(task) {
     task.deviceId?DB.get('devices',task.deviceId):Promise.resolve(null),
   ]);
   const result={};
+  let firstErr=null;
   if(task.date) {
-    result.gcalEventId=await _gcalUpsertEvent(token,task.gcalEventId,taskToGCalEvent(task,cust,loc,dev));
+    try{result.gcalEventId=await _gcalUpsertEvent(token,task.gcalEventId,taskToGCalEvent(task,cust,loc,dev));}
+    catch(e){firstErr=e;}
   }
   if(task.nextService) {
-    result.gcalNextServiceEventId=await _gcalUpsertEvent(token,task.gcalNextServiceEventId,taskToGCalNextServiceEvent(task,cust,loc,dev));
+    try{result.gcalNextServiceEventId=await _gcalUpsertEvent(token,task.gcalNextServiceEventId,taskToGCalNextServiceEvent(task,cust,loc,dev));}
+    catch(e){if(!firstErr) firstErr=e;}
   } else if(task.gcalNextServiceEventId) {
     try{await _gcalDeleteDirect(token,task.gcalNextServiceEventId);}catch(e){}
     result.gcalNextServiceEventId=null;
   }
+  if(firstErr) throw firstErr;
   return result;
 }
 
