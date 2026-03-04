@@ -1,5 +1,5 @@
 const CACHE = 'kotlocrm-v2';
-const STATIC = ['./manifest.json',
+const STATIC = ['./', './index.html', './manifest.json',
   'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=DM+Sans:wght@400;500;600&display=swap'
 ];
 
@@ -17,21 +17,17 @@ self.addEventListener('activate', e => {
   );
 });
 
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-  // index.html: network-first → always picks up new version, falls back to cache offline
-  if (url.pathname === '/' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/')) {
-    e.respondWith(
-      fetch(e.request).then(res => {
-        if (res && res.status === 200) {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-        }
-        return res;
-      }).catch(() => caches.match(e.request))
-    );
-    return;
+// manual update: clear index.html from cache so next reload fetches fresh
+self.addEventListener('message', e => {
+  if (e.data === 'CLEAR_APP_CACHE') {
+    caches.open(CACHE).then(c => {
+      c.delete('./'); c.delete('./index.html');
+      e.source?.postMessage('CACHE_CLEARED');
+    });
   }
-  // everything else: cache-first
+});
+
+self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

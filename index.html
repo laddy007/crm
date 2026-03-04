@@ -1142,6 +1142,11 @@ function showBackupPanel() {
              <div class="backup-btn-desc">Nahradí lokální data daty z Drive</div></div>
       </button>
     </div>
+    <button class="backup-btn" onclick="checkForUpdate()">
+      <div class="backup-btn-icon">↻</div>
+      <div><div class="backup-btn-label">Zkontrolovat aktualizaci</div>
+           <div class="backup-btn-desc">Aktuální verze: v${APP_VERSION}</div></div>
+    </button>
     <div class="backup-info">💡 Sync ukládá data i fotky na Google Drive. ZIP záloha je vždy dostupná samostatně.</div>
     <div id="backup-progress" style="display:none;padding:10px 0 4px">
       <div class="progress-bar-wrap"><div class="progress-bar" id="backup-bar" style="width:0%"></div></div>
@@ -1284,6 +1289,25 @@ document.getElementById('importInput').addEventListener('change',async e=>{
   if(!document.getElementById('backup-overlay'))showBackupPanel();
   await importBackup(f);
 });
+
+// ══════════════════════════════════════════════════════
+// UPDATE CHECK
+// ══════════════════════════════════════════════════════
+
+async function checkForUpdate() {
+  if(!('serviceWorker' in navigator)){toast('❗ Service Worker není k dispozici');return;}
+  const reg=await navigator.serviceWorker.getRegistration();
+  if(!reg?.active){location.reload();return;}
+  toast('🔄 Kontroluji aktualizaci…');
+  // ask SW to clear cached index.html, then reload
+  await new Promise(resolve=>{
+    const ch=new MessageChannel();
+    ch.port1.onmessage=()=>resolve();
+    reg.active.postMessage('CLEAR_APP_CACHE',[ch.port2]);
+    setTimeout(resolve,2000); // fallback
+  });
+  location.reload();
+}
 
 // ══════════════════════════════════════════════════════
 // GOOGLE DRIVE SYNC
