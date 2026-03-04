@@ -1763,6 +1763,9 @@ async function syncFromDrive() {
   }catch(e){console.error('Init:',e);}
   document.getElementById('loading').style.display='none';
   await render();
+  // Při startu: pokud jsme online a máme čekající GCal operace (z minulé session), zpracujeme je
+  if(navigator.onLine && localStorage.getItem('gcal_enabled') && _gcalPending().length)
+    setTimeout(gcalProcessQueue, 3000);
 })();
 </script>
 </body>
