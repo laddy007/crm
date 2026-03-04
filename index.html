@@ -941,7 +941,7 @@ async function saveTask() {
       const gcalEventId=await gcalCreateOrUpdateEvent(savedItem);
       if(gcalEventId && gcalEventId!==savedItem.gcalEventId)
         await DB.put('tasks',{...savedItem,gcalEventId});
-    } catch(e){toast('⚠ Google Kalendář: '+e.message);}
+    } catch(e){gcalPendingAdd({op:'upsert',taskId:id});toast('⚠ Google Kalendář synchronizuje po připojení');}
   }
   toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
 }
@@ -1342,6 +1342,12 @@ document.getElementById('importInput').addEventListener('change',async e=>{
   await importBackup(f);
 });
 
+window.addEventListener('online',()=>{
+  // Po obnovení připojení zpracovat čekající GCal operace (s malým zpožděním pro stabilizaci sítě)
+  if(localStorage.getItem('gcal_enabled') && _gcalPending().length)
+    setTimeout(gcalProcessQueue, 2000);
+});
+
 // ══════════════════════════════════════════════════════
 // UPDATE CHECK
 // ══════════════════════════════════════════════════════
@@ -1486,6 +1492,20 @@ async function driveDownloadFile(token,fileId) {
 }
 
 // ── Google Calendar sync ──────────────────────────────
+
+// Queue helpers (localStorage 'gcal_pending': [{op:'delete',eventId}|{op:'upsert',taskId}])
+function _gcalPending(){try{return JSON.parse(localStorage.getItem('gcal_pending')||'[]');}catch{return[];}}
+function _gcalPendingSave(q){localStorage.setItem('gcal_pending',JSON.stringify(q));}
+function gcalPendingAdd(entry){
+  const q=_gcalPending();
+  if(entry.op==='upsert'){
+    const i=q.findIndex(e=>e.op==='upsert'&&e.taskId===entry.taskId);
+    if(i>=0) q.splice(i,1); // nahradit starší upsert pro stejný task
+  }
+  q.push(entry);
+  _gcalPendingSave(q);
+}
+
 function taskToGCalEvent(task,cust,loc,dev) {
   const custName=cust?custDisplayName(cust):'';
   const title=[custName,task.title||'Zakázka'].filter(Boolean).join(' – ');
@@ -1527,13 +1547,51 @@ async function gcalCreateOrUpdateEvent(task) {
   return data.id||null;
 }
 
+// Přímé smazání bez fallbacku do fronty (používá jen gcalProcessQueue)
+async function _gcalDeleteDirect(token,eventId) {
+  await _driveReq(token,'DELETE',
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`);
+}
+
+// Smazání s fallbackem do fronty při offline/chybě
 async function gcalDeleteEvent(eventId) {
   if(!eventId) return;
   try {
     const token=await getDriveToken();
-    await _driveReq(token,'DELETE',
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`);
-  } catch(e){/* event mohl být ručně smazán v GCal */}
+    await _gcalDeleteDirect(token,eventId);
+  } catch(e){gcalPendingAdd({op:'delete',eventId});}
+}
+
+// Zpracování fronty čekajících GCal operací
+async function gcalProcessQueue() {
+  if(!localStorage.getItem('gcal_enabled')) return;
+  const q=_gcalPending();
+  if(!q.length) return;
+  let token;
+  try{token=await getDriveToken();}catch(e){return;} // stále offline
+  const done=new Set();
+  for(let i=0;i<q.length;i++){
+    const entry=q[i];
+    try{
+      if(entry.op==='delete'){
+        await _gcalDeleteDirect(token,entry.eventId);
+        done.add(i);
+      } else if(entry.op==='upsert'){
+        const task=await DB.get('tasks',entry.taskId);
+        if(!task){done.add(i);continue;} // task mezitím smazán, přeskočit
+        const gcalEventId=await gcalCreateOrUpdateEvent(task);
+        if(gcalEventId && gcalEventId!==task.gcalEventId)
+          await DB.put('tasks',{...task,gcalEventId});
+        done.add(i);
+      }
+    }catch(e){/* nechat ve frontě */}
+  }
+  const remaining=q.filter((_,i)=>!done.has(i));
+  _gcalPendingSave(remaining);
+  if(done.size)
+    toast(remaining.length
+      ?`⚠ Google Kalendář: ${done.size} hotovo, ${remaining.length} stále čeká`
+      :`✓ Google Kalendář: ${done.size} čekajících synchronizováno`);
 }
 
 // ── Push sync ────────────────────────────────────────
@@ -1544,6 +1602,9 @@ async function syncToDrive() {
   try {
     setProgress(3,'Přihlašování ke Google…');
     const token=await getDriveToken();
+
+    setProgress(6,'Synchronizuji Google Kalendář…');
+    await gcalProcessQueue();
 
     setProgress(8,'Načítám Drive složku…');
     const folderId=await getDriveFolderId(token);
