@@ -1360,6 +1360,7 @@ function _getDriveTokenClient() {
   _driveTokenClient=google.accounts.oauth2.initTokenClient({
     client_id:clientId,
     scope:'https://www.googleapis.com/auth/drive.file',
+    prompt:'select_account',
     callback:()=>{},
   });
   return _driveTokenClient;
