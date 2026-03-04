@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.3'; // bump při každém nasazení
+const APP_VERSION = '1.3.4'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -1384,6 +1384,7 @@ async function checkForUpdate() {
 // ══════════════════════════════════════════════════════
 
 function gdriveClientId() { return localStorage.getItem('gdrive_client_id')||''; }
+function gdriveAccountEmail() { return localStorage.getItem('gdrive_account_email')||''; }
 
 function showGdriveSetup(onSave) {
   document.getElementById('gdrive-setup')?.remove();
@@ -1399,6 +1400,7 @@ function showGdriveSetup(onSave) {
       <b>5.</b> Zkopíruj Client ID (xxxx.apps.googleusercontent.com) sem:
     </div>
     <input class="gdrive-setup-input" id="gdrive-cid-input" type="text" placeholder="xxxxx.apps.googleusercontent.com" value="${gdriveClientId()}">
+    <input class="gdrive-setup-input" id="gdrive-email-input" type="email" placeholder="vas@gmail.com (Google účet pro Drive a Kalendář)" value="${gdriveAccountEmail()}">
     <div class="gdrive-setup-btns">
       <button class="btn-sec" onclick="document.getElementById('gdrive-setup').remove()">Zrušit</button>
       <button class="btn-prim" onclick="gdriveSetupSave(${onSave?1:0})">Uložit a synchronizovat</button>
@@ -1413,9 +1415,11 @@ function gdriveSetupSave(doSync) {
   const cid=(document.getElementById('gdrive-cid-input')?.value||'').trim();
   if(!cid){toast('❗ Zadej Client ID');return;}
   if(!cid.includes('.apps.googleusercontent.com')){toast('❗ Neplatné Client ID');return;}
+  const email=(document.getElementById('gdrive-email-input')?.value||'').trim();
   localStorage.setItem('gdrive_client_id',cid);
+  if(email) localStorage.setItem('gdrive_account_email',email); else localStorage.removeItem('gdrive_account_email');
   localStorage.removeItem('gdrive_folder_id'); // reset folder on client change
-  _driveTokenCache=null; _driveTokenClient=null; // force re-auth with new client
+  _driveTokenCache=null; _driveTokenClient=null; // force re-auth with new client/account
   document.getElementById('gdrive-setup')?.remove();
   toast('✓ Client ID uloženo');
   if(doSync) syncToDrive();
@@ -1428,9 +1432,11 @@ let _driveTokenClient=null;
 function _getDriveTokenClient() {
   if(_driveTokenClient) return _driveTokenClient;
   const clientId=gdriveClientId(); if(!clientId) return null;
+  const email=gdriveAccountEmail();
   _driveTokenClient=google.accounts.oauth2.initTokenClient({
     client_id:clientId,
     scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar',
+    ...(email?{login_hint:email}:{}),
     callback:()=>{},
   });
   return _driveTokenClient;
