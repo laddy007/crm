@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.6'; // bump při každém nasazení
+const APP_VERSION = '1.3.7'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -1477,21 +1477,6 @@ function getDriveToken() {
   });
 }
 
-// tichý pre-warm tokenu na pozadí (po načtení GIS) — zamezí popupu při první akci
-function _driveTokenWarmup(){
-  if(!gdriveClientId()) return;
-  if(_tokenLoad()) return; // ještě platný, není třeba
-  try{
-    const client=_getDriveTokenClient(); if(!client) return;
-    client.callback=(resp)=>{
-      if(resp.error||!resp.access_token) return;
-      const expiresAt=Date.now()+(resp.expires_in||3600)*1000;
-      _driveTokenCache={value:resp.access_token,expiresAt};
-      _tokenSave(resp.access_token,expiresAt);
-    };
-    client.requestAccessToken({prompt:''});
-  }catch(e){}
-}
 
 // ── Drive API helpers ────────────────────────────────
 async function _driveReq(token,method,url,body,contentType) {
@@ -1870,11 +1855,6 @@ async function syncFromDrive() {
   }catch(e){console.error('Init:',e);}
   document.getElementById('loading').style.display='none';
   await render();
-  // Při startu: tichý pre-warm tokenu (přihlásí na pozadí bez popupu, pokud GIS cookie platí)
-  if(gdriveClientId()) setTimeout(()=>{
-    if(typeof google!=='undefined'&&google?.accounts?.oauth2) _driveTokenWarmup();
-    else document.querySelector('script[src*="gsi"]')?.addEventListener('load',_driveTokenWarmup,{once:true});
-  },1500);
   // Při startu: pokud jsme online a máme čekající GCal operace (z minulé session), zpracujeme je
   if(navigator.onLine && localStorage.getItem('gcal_enabled') && _gcalPending().length)
     setTimeout(gcalProcessQueue, 3000);
