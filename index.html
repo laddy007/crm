@@ -1178,16 +1178,6 @@ function showBackupPanel() {
     <div class="backup-handle"></div>
     <div class="backup-title"><span>Kotlo</span>CRM – Záloha <span style="font-size:12px;color:var(--muted);font-weight:400;letter-spacing:0">v${APP_VERSION}</span></div>
     <div class="backup-actions">
-      <button class="backup-btn" onclick="exportBackup()">
-        <div class="backup-btn-icon">⬇</div>
-        <div><div class="backup-btn-label">Exportovat zálohu (.zip)</div>
-             <div class="backup-btn-desc">JSON metadata + fotky jako soubory</div></div>
-      </button>
-      <button class="backup-btn" onclick="document.getElementById('importInput').click()">
-        <div class="backup-btn-icon">⬆</div>
-        <div><div class="backup-btn-label">Importovat zálohu (.zip)</div>
-             <div class="backup-btn-desc">Data se přidají, ID se přemapují</div></div>
-      </button>
       <button class="backup-btn" onclick="syncToDrive()" id="drive-backup-btn">
         <div class="backup-btn-icon">☁</div>
         <div style="flex:1"><div class="backup-btn-label" id="drive-backup-label">Sync → Google Drive</div>
@@ -1211,7 +1201,7 @@ function showBackupPanel() {
       <div><div class="backup-btn-label">Zkontrolovat aktualizaci</div>
            <div class="backup-btn-desc">Aktuální verze: v${APP_VERSION}</div></div>
     </button>
-    <div class="backup-info">💡 Sync ukládá data i fotky na Google Drive. ZIP záloha je vždy dostupná samostatně.</div>
+    <div class="backup-info">💡 Sync ukládá data i fotky na Google Drive. Data lze kdykoli obnovit přihlášením k Drive.</div>
     <div id="backup-progress" style="display:none;padding:10px 0 4px">
       <div class="progress-bar-wrap"><div class="progress-bar" id="backup-bar" style="width:0%"></div></div>
       <div style="text-align:center;font-size:12px;color:var(--muted);padding:6px 14px 0" id="backup-status"></div>
@@ -1570,6 +1560,9 @@ function taskToGCalEvent(task,cust,loc,dev) {
     summary:title,
     description:desc,
     start,end,
+    status:'confirmed',
+    transparency:'opaque',
+    reminders:{useDefault:false,overrides:[{method:'popup',minutes:60}]},
     extendedProperties:{private:{kotlocrm_task_id:String(task.id||'')}},
   };
 }
@@ -1588,6 +1581,9 @@ function taskToGCalNextServiceEvent(task,cust,loc,dev) {
     summary:title,
     description:desc,
     start,end,
+    status:'confirmed',
+    transparency:'opaque',
+    reminders:{useDefault:false,overrides:[{method:'popup',minutes:1440}]},
     extendedProperties:{private:{kotlocrm_next_service_id:String(task.id||'')}},
   };
 }
