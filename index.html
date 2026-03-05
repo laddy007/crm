@@ -573,6 +573,11 @@ async function renderCustomerDetail() {
       ${c.address?`<div class="detail-row"><div class="d-label">🏠 Adresa</div><div class="d-value">${esc(c.address)}</div></div>`:''}
       ${c.notes  ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
     </div>
+    ${(c.phone||c.email)?`<button type="button" class="backup-btn" style="margin:0 16px 8px;width:calc(100% - 32px)" onclick="exportCustomerVcard(${c.id})">
+      <div class="backup-btn-icon">📋</div>
+      <div><div class="backup-btn-label">Uložit do kontaktů telefonu</div>
+           <div class="backup-btn-desc">Stáhne .vcf soubor pro import do telefonu</div></div>
+    </button>`:''}
     ${photoURLs.length?`<div class="sec-label">Fotky (${photoURLs.length})</div>${photoDisplayHtml(photoURLs)}`:''}
     <div class="sec-label">Lokace (${locs.length})</div>
     <div class="list">${locRows}</div>
@@ -584,6 +589,97 @@ async function openCustomerForm(id) {
   S._editPhotosInit=false;
   nav('customer-form',{customerId:id});
 }
+
+async function pickGoogleContact() {
+  try {
+    toast('⏳ Načítám kontakty…');
+    const token=await getDriveToken();
+    const url='https://people.googleapis.com/v1/people/me/connections'
+      +'?personFields=names,phoneNumbers,emailAddresses,organizations'
+      +'&sortOrder=DISPLAY_NAME_ASCENDING&pageSize=500';
+    const res=await _driveReq(token,'GET',url);
+    if(!res.ok){toast('⚠ Nepodařilo se načíst kontakty');return;}
+    const data=await res.json();
+    const contacts=(data.connections||[])
+      .filter(c=>c.names?.length)
+      .map(c=>({
+        display:[c.names[0]?.displayName,c.phoneNumbers?.[0]?.value].filter(Boolean).join(' · '),
+        firma:c.organizations?.[0]?.name||'',
+        jmeno:c.names[0]?.givenName||'',
+        prijmeni:c.names[0]?.familyName||'',
+        phone:c.phoneNumbers?.[0]?.value||'',
+        email:c.emailAddresses?.[0]?.value||'',
+      }));
+    if(!contacts.length){toast('Nenalezeny žádné kontakty');return;}
+    _showContactPicker(contacts);
+  } catch(e){toast('⚠ Chyba: '+e.message);}
+}
+
+function _showContactPicker(contacts) {
+  document.getElementById('contact-picker-overlay')?.remove();
+  const overlay=document.createElement('div');
+  overlay.id='contact-picker-overlay';
+  overlay.className='backup-overlay';
+  overlay.style.cssText='display:flex;align-items:flex-end;z-index:9999';
+  overlay.innerHTML=`<div class="backup-sheet" style="max-height:80vh;display:flex;flex-direction:column">
+    <div class="backup-handle"></div>
+    <div class="backup-title" style="padding:0 20px 8px">Vybrat kontakt</div>
+    <div style="padding:0 16px 8px">
+      <input id="contact-search" class="form-input" type="search" placeholder="Hledat…" autocomplete="off"
+        oninput="_filterContacts()" style="margin:0">
+    </div>
+    <div id="contact-list" style="overflow-y:auto;padding:0 8px 16px"></div>
+  </div>`;
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+  window._contactPickerData=contacts;
+  _filterContacts();
+  setTimeout(()=>document.getElementById('contact-search')?.focus(),100);
+}
+
+function _filterContacts() {
+  const q=(document.getElementById('contact-search')?.value||'').toLowerCase();
+  const list=document.getElementById('contact-list'); if(!list) return;
+  const filtered=(window._contactPickerData||[]).filter(c=>c.display.toLowerCase().includes(q));
+  list.innerHTML=filtered.length
+    ? filtered.map((c,i)=>`<button type="button" class="backup-btn" style="margin:4px 0" onclick="_fillFromContact(${i})">
+        <div class="backup-btn-icon">👤</div>
+        <div><div class="backup-btn-label">${esc(c.display)}</div>
+          ${c.firma?`<div class="backup-btn-desc">${esc(c.firma)}</div>`:''}
+        </div></button>`).join('')
+    : `<div class="empty" style="padding:20px;text-align:center">Žádné výsledky</div>`;
+}
+
+function _fillFromContact(idx) {
+  const c=(window._contactPickerData||[])[idx]; if(!c) return;
+  document.getElementById('f-firma').value=c.firma;
+  document.getElementById('f-jmeno').value=c.jmeno;
+  document.getElementById('f-prijmeni').value=c.prijmeni;
+  document.getElementById('f-phone').value=c.phone;
+  document.getElementById('f-email').value=c.email;
+  document.getElementById('contact-picker-overlay')?.remove();
+}
+
+async function exportCustomerVcard(id) {
+  const c=await DB.get('customers',id); if(!c) return;
+  const name=custDisplayName(c);
+  const lines=[
+    'BEGIN:VCARD','VERSION:3.0',
+    `FN:${name}`,
+    c.firma?`ORG:${c.firma}`:'',
+    (c.jmeno||c.prijmeni)?`N:${c.prijmeni||''};${c.jmeno||''};;;`:`N:${name};;;;`,
+    c.phone?`TEL;TYPE=CELL:${c.phone}`:'',
+    c.email?`EMAIL:${c.email}`:'',
+    c.address?`ADR;TYPE=HOME:;;${c.address};;;;`:'',
+    'END:VCARD',
+  ].filter(Boolean).join('\r\n');
+  const blob=new Blob([lines],{type:'text/vcard'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`${name.replace(/[^\w\u00C0-\u024F ]/g,'_')}.vcf`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
 async function renderCustomerForm() {
   const isEdit=!!S.customerId, c=isEdit?(await DB.get('customers',S.customerId)||{}):{};
   if(!S._editPhotosInit){S._editPhotosInit=true;S.editPhotos=[];for(const p of(c.photos||[]))S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false});}
@@ -593,6 +689,11 @@ async function renderCustomerForm() {
     <div style="width:44px"></div>
   </div>
   <div class="scroll"><div class="form-body">
+    ${gdriveClientId()?`<button type="button" class="backup-btn" style="margin-bottom:12px;width:100%" onclick="pickGoogleContact()">
+      <div class="backup-btn-icon">📇</div>
+      <div><div class="backup-btn-label">Vybrat z Google Kontaktů</div>
+           <div class="backup-btn-desc">Předvyplní jméno, telefon a email</div></div>
+    </button>`:''}
     <div class="form-group"><div class="form-label">Firma</div>
       <input class="form-input" id="f-firma" type="text" value="${esc(c.firma||'')}" placeholder="Název firmy"></div>
     <div class="form-row">
@@ -1446,7 +1547,7 @@ function _getDriveTokenClient() {
   const email=gdriveAccountEmail();
   _driveTokenClient=google.accounts.oauth2.initTokenClient({
     client_id:clientId,
-    scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar',
+    scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/contacts.readonly',
     ...(email?{login_hint:email}:{}),
     callback:()=>{},
   });
