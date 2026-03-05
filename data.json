@@ -1,7 +1,7 @@
 {
   "version": 4,
-  "format": "zip-opfs-v1",
-  "exportedAt": "2026-03-05T00:00:00.000Z",
+  "format": "drive-sync-v1",
+  "syncedAt": "2026-03-05T00:00:00.000Z",
   "app": "KotloCRM",
   "counts": { "customers": 12, "locations": 17, "devices": 6, "tasks": 6, "photos": 19 },
   "data": {

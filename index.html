@@ -220,7 +220,7 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.3.9'; // bump při každém nasazení
+const APP_VERSION = '1.5.0'; // bump při každém nasazení
 
 // ══════════════════════════════════════════════════════
 // OPFS
@@ -380,11 +380,21 @@ function fmtDate(d) {
 function fmtPrice(p) { return p?Number(p).toLocaleString('cs-CZ')+'&nbsp;Kč':'—'; }
 const STATUS = { nova:'Nová', probiha:'Probíhá', dokoncena:'Dokončena', ceka:'Čeká na díl' };
 
-function toast(msg) {
+function toast(msg, opts={}) {
   document.querySelectorAll('.toast').forEach(t=>t.remove());
-  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
-  document.body.appendChild(t); setTimeout(()=>t.remove(),2400);
+  const t=document.createElement('div'); t.className='toast';
+  if(opts.action && opts.onAction) {
+    t.innerHTML=`<span>${esc(msg)}</span><button style="margin-left:10px;background:none;border:1px solid rgba(255,255,255,.5);border-radius:6px;color:inherit;padding:2px 8px;font:inherit;cursor:pointer">${esc(opts.action)}</button>`;
+    t.querySelector('button').onclick=()=>{t.remove();opts.onAction();};
+    document.body.appendChild(t); setTimeout(()=>t.remove(),6000);
+  } else {
+    t.textContent=msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2400);
+  }
 }
+function _driveDirty(){return !!localStorage.getItem('gdrive_dirty');}
+function _driveDirtySet(){if(localStorage.getItem('gdrive_last_sync')) localStorage.setItem('gdrive_dirty','1');}
+function _driveDirtyClear(){localStorage.removeItem('gdrive_dirty');}
 function showLightbox(src) {
   const lb=document.createElement('div'); lb.className='lightbox';
   lb.innerHTML=`<img src="${src}"><button class="lb-close" onclick="this.parentElement.remove()">✕</button>`;
@@ -749,7 +759,7 @@ async function saveCustomer() {
   if(S.customerId) item.id=S.customerId;
   const id=await DB.put('customers',item);
   await DB.put('customers',{...item,id,photos:await savePhotos('customers',id,S.editPhotos,ex?.photos||[])});
-  S.customerId=id; toast(ex?'✓ Uloženo':'✓ Zákazník přidán'); nav('customer-detail');
+  S.customerId=id; _driveDirtySet(); toast(ex?'✓ Uloženo':'✓ Zákazník přidán'); nav('customer-detail');
 }
 async function deleteCustomer(id) {
   if(!confirm('Smazat zákazníka a vše co k němu patří?')) return;
@@ -763,7 +773,7 @@ async function deleteCustomer(id) {
     }
     await DB.del('locations',l.id);
   }
-  await DB.del('customers',id); toast('Zákazník smazán'); nav('customers',{customerId:null});
+  await DB.del('customers',id); _driveDirtySet(); toast('Zákazník smazán'); nav('customers',{customerId:null});
 }
 
 // ══════════════════════════════════════════════════════
@@ -849,7 +859,7 @@ async function saveLocation() {
   if(S.locationId) item.id=S.locationId;
   const id=await DB.put('locations',item);
   await DB.put('locations',{...item,id,photos:await savePhotos('locations',id,S.editPhotos,ex?.photos||[])});
-  S.locationId=id; toast('✓ Lokace uložena'); nav('location-detail');
+  S.locationId=id; _driveDirtySet(); toast('✓ Lokace uložena'); nav('location-detail');
 }
 async function deleteLocation(id) {
   if(!confirm('Smazat lokaci a vše co k ní patří?')) return;
@@ -859,7 +869,7 @@ async function deleteLocation(id) {
     for(const t of await DB.idx('tasks','deviceId',d.id)) { for(const p of(t.photos||[])) await OPFS.del(p); await DB.del('tasks',t.id); }
     await DB.del('devices',d.id);
   }
-  await DB.del('locations',id); toast('Lokace smazána'); nav('customer-detail',{locationId:null});
+  await DB.del('locations',id); _driveDirtySet(); toast('Lokace smazána'); nav('customer-detail',{locationId:null});
 }
 
 // ══════════════════════════════════════════════════════
@@ -956,13 +966,13 @@ async function saveDevice() {
   if(S.deviceId) item.id=S.deviceId;
   const id=await DB.put('devices',item);
   await DB.put('devices',{...item,id,photos:await savePhotos('devices',id,S.editPhotos,ex?.photos||[])});
-  S.deviceId=id; toast(ex?'✓ Zařízení uloženo':'✓ Zařízení přidáno'); nav('device-detail');
+  S.deviceId=id; _driveDirtySet(); toast(ex?'✓ Zařízení uloženo':'✓ Zařízení přidáno'); nav('device-detail');
 }
 async function deleteDevice(id) {
   if(!confirm('Smazat zařízení a všechny zakázky?')) return;
   const d=await DB.get('devices',id); for(const p of(d?.photos||[])) await OPFS.del(p);
   for(const t of await DB.idx('tasks','deviceId',id)) { for(const p of(t.photos||[])) await OPFS.del(p); await DB.del('tasks',t.id); }
-  await DB.del('devices',id); toast('Zařízení smazáno'); nav('location-detail',{deviceId:null});
+  await DB.del('devices',id); _driveDirtySet(); toast('Zařízení smazáno'); nav('location-detail',{deviceId:null});
 }
 
 // ══════════════════════════════════════════════════════
@@ -1088,7 +1098,7 @@ async function saveTask() {
       toast('⚠ Google Kalendář: '+em.slice(0,100));
     }
   }
-  toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
+  _driveDirtySet(); toast(ex?'✓ Zakázka uložena':'✓ Zakázka přidána'); nav('task-detail');
 }
 async function deleteTask(id) {
   if(!confirm('Smazat zakázku?')) return;
@@ -1489,6 +1499,9 @@ window.addEventListener('online',()=>{
   // Po obnovení připojení zpracovat čekající GCal operace (s malým zpožděním pro stabilizaci sítě)
   if(localStorage.getItem('gcal_enabled') && _gcalPending().length)
     setTimeout(gcalProcessQueue, 2000);
+  // Upozornit na čekající Drive sync
+  if(_driveDirty() && gdriveClientId())
+    setTimeout(()=>toast('☁ Jste online – data čekají na sync',{action:'Sync',onAction:syncToDrive}), 3000);
 });
 
 // ══════════════════════════════════════════════════════
@@ -1898,6 +1911,7 @@ async function syncToDrive() {
       new TextEncoder().encode(dataJson),'application/json',driveFiles['data.json']);
 
     localStorage.setItem('gdrive_last_sync',new Date().toISOString());
+    _driveDirtyClear();
     const warn=upFailed.length||delFailed.length;
     const summary=`${customers.length} zákazníků, ${tasks.length} zakázek · ↑${upOk}/${toUpload.length} fotek`
       +(delOk||delFailed.length?` · ↓${delOk} smazáno`:'')
@@ -1917,8 +1931,7 @@ async function syncFromDrive() {
     setProgress(5,'Přihlašování ke Google…');
     const token=await getDriveToken();
 
-    const folderId=localStorage.getItem('gdrive_folder_id');
-    if(!folderId){toast('❗ Drive nebyl ještě nakonfigurován – proveď nejdříve Sync.');return;}
+    const folderId=await getDriveFolderId(token);
 
     setProgress(15,'Načítám seznam souborů z Drive…');
     const driveFiles=await driveListFiles(token,folderId);
