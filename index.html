@@ -1587,7 +1587,13 @@ async function _driveReq(token,method,url,body,contentType) {
 }
 
 async function getDriveFolderId(token) {
-  const cached=localStorage.getItem('gdrive_folder_id'); if(cached) return cached;
+  const cached=localStorage.getItem('gdrive_folder_id');
+  if(cached) {
+    const check=await _driveReq(token,'GET',
+      `https://www.googleapis.com/drive/v3/files/${cached}?fields=id,trashed`);
+    if(check.ok){const d=await check.json(); if(!d.trashed) return cached;}
+    localStorage.removeItem('gdrive_folder_id'); // složka smazána/v koši → vytvořit novou
+  }
   const res=await _driveReq(token,'POST','https://www.googleapis.com/drive/v3/files',
     JSON.stringify({name:'KotloCRM',mimeType:'application/vnd.google-apps.folder'}),'application/json');
   const data=await res.json();
