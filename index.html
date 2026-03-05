@@ -216,7 +216,7 @@
 <div id="loading"><div class="loading-logo"><b>Kotlo</b>CRM</div><div class="loading-dot"></div></div>
 <div id="app"></div>
 <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none">
-<input type="file" id="importInput" accept=".zip" style="display:none">
+<input type="file" id="importInput" accept=".zip,.json" style="display:none">
 
 <script>
 'use strict';
@@ -1411,23 +1411,27 @@ async function exportBackup(mode) {
 
 async function importBackup(file) {
   try {
-    if(!file.name.endsWith('.zip')){toast('❗ Vyber .zip soubor');return;}
-    if(typeof JSZip==='undefined'){toast('❗ JSZip se načítá');return;}
-    setProgress(5,'Čtu ZIP…');
-    const zip=await JSZip.loadAsync(await file.arrayBuffer());
-    setProgress(15,'Načítám data.json…');
-    const jf=zip.file('data.json'); if(!jf){toast('❗ Chybí data.json');return;}
-    const backup=JSON.parse(await jf.async('string'));
-    if(!backup?.data?.customers){toast('❗ Neplatný soubor');return;}
-
-    const blobs={};
-    const photoKeys=Object.keys(zip.files).filter(n=>n.startsWith('photos/')&&!zip.files[n].dir);
-    let i=0;
-    for(const full of photoKeys){
-      const rel=full.replace(/^photos\//,'');
-      blobs[rel]=new Blob([await zip.files[full].async('uint8array')],{type:full.endsWith('.png')?'image/png':'image/jpeg'});
-      i++; setProgress(15+Math.round(i/Math.max(photoKeys.length,1)*30),`Fotky… ${i}/${photoKeys.length}`);
+    let backup, blobs={};
+    if(file.name.endsWith('.json')){
+      setProgress(10,'Načítám JSON…');
+      backup=JSON.parse(await file.text());
+    } else {
+      if(!file.name.endsWith('.zip')){toast('❗ Vyber .zip nebo .json soubor');return;}
+      if(typeof JSZip==='undefined'){toast('❗ JSZip se načítá');return;}
+      setProgress(5,'Čtu ZIP…');
+      const zip=await JSZip.loadAsync(await file.arrayBuffer());
+      setProgress(15,'Načítám data.json…');
+      const jf=zip.file('data.json'); if(!jf){toast('❗ Chybí data.json');return;}
+      backup=JSON.parse(await jf.async('string'));
+      const photoKeys=Object.keys(zip.files).filter(n=>n.startsWith('photos/')&&!zip.files[n].dir);
+      let i=0;
+      for(const full of photoKeys){
+        const rel=full.replace(/^photos\//,'');
+        blobs[rel]=new Blob([await zip.files[full].async('uint8array')],{type:full.endsWith('.png')?'image/png':'image/jpeg'});
+        i++; setProgress(15+Math.round(i/Math.max(photoKeys.length,1)*30),`Fotky… ${i}/${photoKeys.length}`);
+      }
     }
+    if(!backup?.data?.customers){toast('❗ Neplatný soubor');return;}
 
     const {customers=[],locations=[],devices=[],tasks=[]}=backup.data;
     const cMap={},lMap={},dMap={};
