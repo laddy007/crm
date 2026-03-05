@@ -569,8 +569,10 @@ async function renderCustomerDetail() {
       ${(c.jmeno||c.prijmeni)?`<div class="detail-row"><div class="d-label">👤 Jméno</div><div class="d-value">${esc([c.jmeno,c.prijmeni].filter(Boolean).join(' '))}</div></div>`:''}
       ${c.prezdivka ?`<div class="detail-row"><div class="d-label">🏷 Přezdívka</div><div class="d-value">${esc(c.prezdivka)}</div></div>`:''}
       ${c.phone  ?`<div class="detail-row"><div class="d-label">📞 Telefon</div><div class="d-value"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div></div>`:''}
+      ${c.phone2 ?`<div class="detail-row"><div class="d-label">📞 Telefon 2</div><div class="d-value"><a href="tel:${esc(c.phone2)}">${esc(c.phone2)}</a></div></div>`:''}
       ${c.email  ?`<div class="detail-row"><div class="d-label">✉ Email</div><div class="d-value"><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div></div>`:''}
-      ${c.address?`<div class="detail-row"><div class="d-label">🏠 Adresa</div><div class="d-value">${esc(c.address)}</div></div>`:''}
+      ${c.email2 ?`<div class="detail-row"><div class="d-label">✉ Email 2</div><div class="d-value"><a href="mailto:${esc(c.email2)}">${esc(c.email2)}</a></div></div>`:''}
+      ${c.address?`<div class="detail-row"><div class="d-label">🏠 Adresa</div><div class="d-value">${esc(c.address)}${c.zip?' · '+esc(c.zip):''}</div></div>`:''}
       ${c.notes  ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
     </div>
     ${(c.phone||c.email)?`<button type="button" class="backup-btn" style="margin:0 16px 8px;width:calc(100% - 32px)" onclick="exportCustomerVcard(${c.id})">
@@ -669,8 +671,10 @@ async function exportCustomerVcard(id) {
     c.firma?`ORG:${c.firma}`:'',
     (c.jmeno||c.prijmeni)?`N:${c.prijmeni||''};${c.jmeno||''};;;`:`N:${name};;;;`,
     c.phone?`TEL;TYPE=CELL:${c.phone}`:'',
+    c.phone2?`TEL;TYPE=CELL:${c.phone2}`:'',
     c.email?`EMAIL:${c.email}`:'',
-    c.address?`ADR;TYPE=HOME:;;${c.address};;;;`:'',
+    c.email2?`EMAIL:${c.email2}`:'',
+    c.address?`ADR;TYPE=HOME:;;${c.address};;;${c.zip||''};`:'',
     'END:VCARD',
   ].filter(Boolean).join('\r\n');
   const blob=new Blob([lines],{type:'text/vcard'});
@@ -707,11 +711,21 @@ async function renderCustomerForm() {
     <div class="form-row">
       <div class="form-group"><div class="form-label">Telefon</div>
         <input class="form-input" id="f-phone" type="tel" value="${esc(c.phone||'')}" placeholder="+420 …"></div>
+      <div class="form-group"><div class="form-label">Telefon 2</div>
+        <input class="form-input" id="f-phone2" type="tel" value="${esc(c.phone2||'')}" placeholder="+420 …"></div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><div class="form-label">Email</div>
         <input class="form-input" id="f-email" type="email" value="${esc(c.email||'')}" placeholder="email@…"></div>
+      <div class="form-group"><div class="form-label">Email 2</div>
+        <input class="form-input" id="f-email2" type="email" value="${esc(c.email2||'')}" placeholder="email@…"></div>
     </div>
-    <div class="form-group"><div class="form-label">Fakturační adresa</div>
-      <input class="form-input" id="f-address" type="text" value="${esc(c.address||'')}" placeholder="Ulice, Město"></div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2"><div class="form-label">Fakturační adresa</div>
+        <input class="form-input" id="f-address" type="text" value="${esc(c.address||'')}" placeholder="Ulice, Město"></div>
+      <div class="form-group"><div class="form-label">PSČ</div>
+        <input class="form-input" id="f-zip" type="text" value="${esc(c.zip||'')}" placeholder="12345" inputmode="numeric"></div>
+    </div>
     <div class="form-group"><div class="form-label">Poznámky</div>
       <textarea class="form-textarea" id="f-notes">${esc(c.notes||'')}</textarea></div>
     ${photoEditHtml()}
@@ -731,7 +745,7 @@ async function saveCustomer() {
   const name=custDisplayName({firma,jmeno,prijmeni,prezdivka});
   if(!name||name==='—'){toast('❗ Zadej firmu nebo jméno');return;}
   const now=new Date().toISOString(), ex=S.customerId?await DB.get('customers',S.customerId):null;
-  const item={name, firma, jmeno, prijmeni, prezdivka, phone:document.getElementById('f-phone')?.value?.trim()||'', email:document.getElementById('f-email')?.value?.trim()||'', address:document.getElementById('f-address')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  const item={name, firma, jmeno, prijmeni, prezdivka, phone:document.getElementById('f-phone')?.value?.trim()||'', phone2:document.getElementById('f-phone2')?.value?.trim()||'', email:document.getElementById('f-email')?.value?.trim()||'', email2:document.getElementById('f-email2')?.value?.trim()||'', address:document.getElementById('f-address')?.value?.trim()||'', zip:document.getElementById('f-zip')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
   if(S.customerId) item.id=S.customerId;
   const id=await DB.put('customers',item);
   await DB.put('customers',{...item,id,photos:await savePhotos('customers',id,S.editPhotos,ex?.photos||[])});
@@ -779,7 +793,7 @@ async function renderLocationDetail() {
   <div class="scroll">
     <div class="sec-label">Lokace</div>
     <div class="detail-block">
-      <div class="detail-row"><div class="d-label">📍 Adresa</div><div class="d-value">${esc(l.address)}${l.city?', '+esc(l.city):''}</div></div>
+      <div class="detail-row"><div class="d-label">📍 Adresa</div><div class="d-value">${esc(l.address)}${l.city?', '+esc(l.city):''}${l.zip?' · '+esc(l.zip):''}</div></div>
       ${l.floor ?`<div class="detail-row"><div class="d-label">🏚 Umístění</div><div class="d-value">${esc(l.floor)}</div></div>`:''}
       ${l.access?`<div class="detail-row"><div class="d-label">🔑 Přístup</div><div class="d-value">${esc(l.access)}</div></div>`:''}
       ${l.notes ?`<div class="detail-row"><div class="d-label">📝 Poznámky</div><div class="d-value" style="white-space:pre-wrap">${esc(l.notes)}</div></div>`:''}
@@ -811,6 +825,8 @@ async function renderLocationForm() {
       <div class="form-group"><div class="form-label">Město</div>
         <input class="form-input" id="f-city" type="text" value="${esc(l.city||'')}" placeholder="Praha"></div>
     </div>
+    <div class="form-group"><div class="form-label">PSČ</div>
+      <input class="form-input" id="f-zip" type="text" value="${esc(l.zip||'')}" placeholder="12345" inputmode="numeric"></div>
     <div class="form-group"><div class="form-label">Umístění / podlaží</div>
       <input class="form-input" id="f-floor" type="text" value="${esc(l.floor||'')}" placeholder="Sklep, 1. PP"></div>
     <div class="form-group"><div class="form-label">Přístup / klíče</div>
@@ -829,7 +845,7 @@ async function renderLocationForm() {
 async function saveLocation() {
   const address=document.getElementById('f-address')?.value?.trim(); if(!address){toast('❗ Zadej adresu');return;}
   const now=new Date().toISOString(), ex=S.locationId?await DB.get('locations',S.locationId):null;
-  const item={customerId:ex?.customerId||S.customerId, address, city:document.getElementById('f-city')?.value?.trim()||'', floor:document.getElementById('f-floor')?.value?.trim()||'', access:document.getElementById('f-access')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  const item={customerId:ex?.customerId||S.customerId, address, city:document.getElementById('f-city')?.value?.trim()||'', zip:document.getElementById('f-zip')?.value?.trim()||'', floor:document.getElementById('f-floor')?.value?.trim()||'', access:document.getElementById('f-access')?.value?.trim()||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
   if(S.locationId) item.id=S.locationId;
   const id=await DB.put('locations',item);
   await DB.put('locations',{...item,id,photos:await savePhotos('locations',id,S.editPhotos,ex?.photos||[])});
@@ -972,6 +988,8 @@ async function renderTaskDetail() {
       ${t.title      ?`<div class="detail-row"><div class="d-label">🔧 Název</div><div class="d-value">${esc(t.title)}</div></div>`:''}
       ${t.repairType ?`<div class="detail-row"><div class="d-label">⚙ Typ práce</div><div class="d-value">${esc(t.repairType)}</div></div>`:''}
       ${t.price      ?`<div class="detail-row"><div class="d-label">💰 Cena</div><div class="d-value price-accent">${fmtPrice(t.price)}</div></div>`:''}
+      ${t.hours      ?`<div class="detail-row"><div class="d-label">⏱ Hodin</div><div class="d-value">${esc(t.hours)} h</div></div>`:''}
+      ${t.paymentStatus?`<div class="detail-row"><div class="d-label">💳 Platba</div><div class="d-value">${esc({nezaplaceno:'Nezaplaceno',zaplaceno:'Zaplaceno',fakturováno:'Fakturováno'}[t.paymentStatus]||t.paymentStatus)}</div></div>`:''}
       ${t.description?`<div class="detail-row"><div class="d-label">📋 Popis</div><div class="d-value" style="white-space:pre-wrap">${esc(t.description)}</div></div>`:''}
       ${t.parts      ?`<div class="detail-row"><div class="d-label">🔩 Díly</div><div class="d-value" style="white-space:pre-wrap">${esc(t.parts)}</div></div>`:''}
       ${t.nextService?`<div class="detail-row"><div class="d-label">📆 Příští servis</div><div class="d-value">${fmtDate(t.nextService)}</div></div>`:''}
@@ -1019,9 +1037,18 @@ async function renderTaskForm() {
     <div class="form-row">
       <div class="form-group"><div class="form-label">Cena (Kč)</div>
         <input class="form-input" id="f-price" type="number" value="${esc(t.price||'')}" placeholder="0"></div>
-      <div class="form-group"><div class="form-label">Příští servis</div>
-        <input class="form-input" id="f-nextService" type="datetime-local" step="600" value="${t.nextService?.length===10?t.nextService+'T00:00':(t.nextService||'')}"></div>
+      <div class="form-group"><div class="form-label">Hodin práce</div>
+        <input class="form-input" id="f-hours" type="number" step="0.5" value="${esc(t.hours||'')}" placeholder="0"></div>
     </div>
+    <div class="form-group"><div class="form-label">Stav platby</div>
+      <select class="form-select" id="f-paymentStatus">
+        <option value="">— vybrat —</option>
+        <option value="nezaplaceno" ${t.paymentStatus==='nezaplaceno'?'selected':''}>Nezaplaceno</option>
+        <option value="zaplaceno" ${t.paymentStatus==='zaplaceno'?'selected':''}>Zaplaceno</option>
+        <option value="fakturováno" ${t.paymentStatus==='fakturováno'?'selected':''}>Fakturováno</option>
+      </select></div>
+    <div class="form-group"><div class="form-label">Příští servis</div>
+      <input class="form-input" id="f-nextService" type="datetime-local" step="600" value="${t.nextService?.length===10?t.nextService+'T00:00':(t.nextService||'')}"></div>
     <div class="form-group"><div class="form-label">Poznámky</div>
       <textarea class="form-textarea" id="f-notes">${esc(t.notes||'')}</textarea></div>
     ${photoEditHtml()}
@@ -1037,7 +1064,8 @@ async function saveTask() {
   const date=document.getElementById('f-date')?.value; if(!date){toast('❗ Zadej datum');return;}
   const now=new Date().toISOString(), ex=S.taskId?await DB.get('tasks',S.taskId):null;
   const priceRaw=document.getElementById('f-price')?.value?.trim();
-  const item={deviceId:ex?.deviceId||S.deviceId, locationId:ex?.locationId||S.locationId, customerId:ex?.customerId||S.customerId, date, title:document.getElementById('f-title')?.value?.trim()||'', status:document.getElementById('f-status')?.value||'nova', repairType:document.getElementById('f-repairType')?.value||'', description:document.getElementById('f-description')?.value?.trim()||'', parts:document.getElementById('f-parts')?.value?.trim()||'', price:priceRaw?Number(priceRaw):null, nextService:document.getElementById('f-nextService')?.value||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
+  const hoursRaw=document.getElementById('f-hours')?.value?.trim();
+  const item={deviceId:ex?.deviceId||S.deviceId, locationId:ex?.locationId||S.locationId, customerId:ex?.customerId||S.customerId, date, title:document.getElementById('f-title')?.value?.trim()||'', status:document.getElementById('f-status')?.value||'nova', repairType:document.getElementById('f-repairType')?.value||'', description:document.getElementById('f-description')?.value?.trim()||'', parts:document.getElementById('f-parts')?.value?.trim()||'', price:priceRaw?Number(priceRaw):null, hours:hoursRaw?Number(hoursRaw):null, paymentStatus:document.getElementById('f-paymentStatus')?.value||'', nextService:document.getElementById('f-nextService')?.value||'', notes:document.getElementById('f-notes')?.value?.trim()||'', photos:ex?.photos||[], createdAt:ex?.createdAt||now, updatedAt:now};
   if(S.taskId) item.id=S.taskId;
   if(ex?.gcalEventId) item.gcalEventId=ex.gcalEventId;
   if(ex?.gcalNextServiceEventId) item.gcalNextServiceEventId=ex.gcalNextServiceEventId;
