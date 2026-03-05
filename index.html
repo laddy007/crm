@@ -581,12 +581,12 @@ async function renderCustomerDetail() {
 }
 
 async function openCustomerForm(id) {
-  S.editPhotos=[];
-  if(id){ const c=await DB.get('customers',id); for(const p of(c.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); }
+  S._editPhotosInit=false;
   nav('customer-form',{customerId:id});
 }
 async function renderCustomerForm() {
   const isEdit=!!S.customerId, c=isEdit?(await DB.get('customers',S.customerId)||{}):{};
+  if(!S._editPhotosInit){S._editPhotosInit=true;S.editPhotos=[];for(const p of(c.photos||[]))S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false});}
   return `<div class="header">
     <button class="btn-icon" onclick="cancelForm()">✕</button>
     <div class="header-title">${isEdit?'Upravit zákazníka':'Nový zákazník'}</div>
@@ -691,12 +691,13 @@ async function renderLocationDetail() {
 }
 
 async function openLocationForm(id,cid) {
-  S.editPhotos=[];
-  if(id){ const l=await DB.get('locations',id); for(const p of(l.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); nav('location-form',{locationId:id}); }
+  S._editPhotosInit=false;
+  if(id) nav('location-form',{locationId:id});
   else   nav('location-form',{locationId:null,customerId:cid||S.customerId});
 }
 async function renderLocationForm() {
   const isEdit=!!S.locationId, l=isEdit?(await DB.get('locations',S.locationId)||{}):{};
+  if(!S._editPhotosInit){S._editPhotosInit=true;S.editPhotos=[];for(const p of(l.photos||[]))S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false});}
   return `<div class="header">
     <button class="btn-icon" onclick="cancelForm()">✕</button>
     <div class="header-title">${isEdit?'Upravit lokaci':'Nová lokace'}</div>
@@ -792,12 +793,12 @@ async function renderDeviceDetail() {
 }
 
 async function openDeviceForm(id) {
-  S.editPhotos=[];
-  if(id){ const d=await DB.get('devices',id); for(const p of(d.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); }
+  S._editPhotosInit=false;
   nav('device-form',{deviceId:id});
 }
 async function renderDeviceForm() {
   const isEdit=!!S.deviceId, d=isEdit?(await DB.get('devices',S.deviceId)||{}):{};
+  if(!S._editPhotosInit){S._editPhotosInit=true;S.editPhotos=[];for(const p of(d.photos||[]))S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false});}
   return `<div class="header">
     <button class="btn-icon" onclick="cancelForm()">✕</button>
     <div class="header-title">${isEdit?'Upravit zařízení':'Nové zařízení'}</div>
@@ -880,12 +881,12 @@ async function renderTaskDetail() {
 }
 
 async function openTaskForm(id) {
-  S.editPhotos=[];
-  if(id){ const t=await DB.get('tasks',id); for(const p of(t.photos||[])) S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false}); }
+  S._editPhotosInit=false;
   nav('task-form',{taskId:id});
 }
 async function renderTaskForm() {
   const isEdit=!!S.taskId, t=isEdit?(await DB.get('tasks',S.taskId)||{}):{};
+  if(!S._editPhotosInit){S._editPhotosInit=true;S.editPhotos=[];for(const p of(t.photos||[]))S.editPhotos.push({src:await resolveURL(p),path:p,isNew:false});}
   const today=new Date().toLocaleString('sv-SE',{timeZone:'Europe/Prague'}).replace(' ','T').slice(0,16);
   const statuses=[{v:'nova',l:'Nová'},{v:'probiha',l:'Probíhá'},{v:'dokoncena',l:'Dokončena'},{v:'ceka',l:'Čeká na díl'}];
   const repairTypes=['Pravidelná revize','Výměna dílu','Oprava poruchy','Uvedení do provozu','Čištění','Jiné'];
