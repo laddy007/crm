@@ -3,392 +3,56 @@
   "format": "zip-opfs-v1",
   "exportedAt": "2026-03-05T00:00:00.000Z",
   "app": "KotloCRM",
-  "counts": { "customers": 12, "locations": 17, "devices": 6, "tasks": 6, "photos": 0 },
+  "counts": { "customers": 12, "locations": 17, "devices": 6, "tasks": 6, "photos": 19 },
   "data": {
     "customers": [
-      {
-        "id": 1,
-        "name": "Zákazník 1",
-        "firma": "", "jmeno": "", "prijmeni": "", "prezdivka": "",
-        "phone": "", "phone2": "", "email": "", "email2": "",
-        "address": "", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 3,
-        "name": "Zákazník 3",
-        "firma": "", "jmeno": "", "prijmeni": "", "prezdivka": "",
-        "phone": "", "phone2": "", "email": "", "email2": "",
-        "address": "", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 4,
-        "name": "Tomáš Lisý",
-        "firma": "", "jmeno": "Tomáš", "prijmeni": "Lisý", "prezdivka": "",
-        "phone": "", "phone2": "", "email": "", "email2": "",
-        "address": "Turská 515, Libčice", "zip": "25266", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 6,
-        "name": "Pavel Janega",
-        "firma": "", "jmeno": "Pavel", "prijmeni": "Janega", "prezdivka": "",
-        "phone": "602 621 1567", "phone2": "", "email": "", "email2": "",
-        "address": "V Cihelnách 247, Nelahozeves", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 7,
-        "name": "Jana Nováková",
-        "firma": "", "jmeno": "Jana", "prijmeni": "Nováková", "prezdivka": "",
-        "phone": "725 911 376", "phone2": "", "email": "", "email2": "",
-        "address": "Nerudova 190, Libčice nad Vltavou", "zip": "25266", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 8,
-        "name": "Derek Hudek",
-        "firma": "", "jmeno": "Derek", "prijmeni": "Hudek", "prezdivka": "",
-        "phone": "", "phone2": "", "email": "", "email2": "",
-        "address": "Nádražní 173, Dolní Beřkovice", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 9,
-        "name": "Adam Gabriel",
-        "firma": "", "jmeno": "Adam", "prijmeni": "Gabriel", "prezdivka": "",
-        "phone": "", "phone2": "", "email": "", "email2": "",
-        "address": "K Lesu 564, Horoměřice", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 10,
-        "name": "Tomáš Parýzek",
-        "firma": "", "jmeno": "Tomáš", "prijmeni": "Parýzek", "prezdivka": "",
-        "phone": "777 232 801", "phone2": "", "email": "", "email2": "",
-        "address": "Letecká 543, Libčice", "zip": "25266", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 11,
-        "name": "Jaroslav Richter",
-        "firma": "", "jmeno": "Jaroslav", "prijmeni": "Richter", "prezdivka": "",
-        "phone": "+420 725 291 247", "phone2": "", "email": "", "email2": "",
-        "address": "Zahradní 282, Libčice nad Vltavou", "zip": "25266", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 12,
-        "name": "Radek Pospíšil",
-        "firma": "", "jmeno": "Radek", "prijmeni": "Pospíšil", "prezdivka": "",
-        "phone": "+420 736 755 950", "phone2": "", "email": "", "email2": "",
-        "address": "U Kovárny 75, Zeměchy", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 13,
-        "name": "Zákazník 13",
-        "firma": "", "jmeno": "", "prijmeni": "", "prezdivka": "",
-        "phone": "", "phone2": "", "email": "", "email2": "",
-        "address": "", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 14,
-        "name": "Tereza Kubelková",
-        "firma": "", "jmeno": "Tereza", "prijmeni": "Kubelková", "prezdivka": "",
-        "phone": "+420 604 437 023", "phone2": "", "email": "", "email2": "",
-        "address": "Kladenská 12, Velké Přílepy", "zip": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z",
-        "updatedAt": "2025-09-01T00:00:00.000Z"
-      }
+      { "id": 1, "name": "Zákazník 1", "firma": "", "jmeno": "", "prijmeni": "", "prezdivka": "", "phone": "", "phone2": "", "email": "", "email2": "", "address": "", "zip": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 3, "name": "Zákazník 3", "firma": "", "jmeno": "", "prijmeni": "", "prezdivka": "", "phone": "", "phone2": "", "email": "", "email2": "", "address": "", "zip": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 4, "name": "Tomáš Lisý", "firma": "", "jmeno": "Tomáš", "prijmeni": "Lisý", "prezdivka": "", "phone": "", "phone2": "", "email": "", "email2": "", "address": "Turská 515, Libčice", "zip": "25266", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 6, "name": "Pavel Janega", "firma": "", "jmeno": "Pavel", "prijmeni": "Janega", "prezdivka": "", "phone": "602 621 1567", "phone2": "", "email": "", "email2": "", "address": "V Cihelnách 247, Nelahozeves", "zip": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 7, "name": "Jana Nováková", "firma": "", "jmeno": "Jana", "prijmeni": "Nováková", "prezdivka": "", "phone": "725 911 376", "phone2": "", "email": "", "email2": "", "address": "Nerudova 190, Libčice nad Vltavou", "zip": "25266", "notes": "", "photos": ["customers/customer_7_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 8, "name": "Derek Hudek", "firma": "", "jmeno": "Derek", "prijmeni": "Hudek", "prezdivka": "", "phone": "", "phone2": "", "email": "", "email2": "", "address": "Nádražní 173, Dolní Beřkovice", "zip": "", "notes": "", "photos": ["customers/customer_8_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 9, "name": "Adam Gabriel", "firma": "", "jmeno": "Adam", "prijmeni": "Gabriel", "prezdivka": "", "phone": "", "phone2": "", "email": "", "email2": "", "address": "K Lesu 564, Horoměřice", "zip": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 10, "name": "Tomáš Parýzek", "firma": "", "jmeno": "Tomáš", "prijmeni": "Parýzek", "prezdivka": "", "phone": "777 232 801", "phone2": "", "email": "", "email2": "", "address": "Letecká 543, Libčice", "zip": "25266", "notes": "", "photos": ["customers/customer_10_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 11, "name": "Jaroslav Richter", "firma": "", "jmeno": "Jaroslav", "prijmeni": "Richter", "prezdivka": "", "phone": "+420 725 291 247", "phone2": "", "email": "", "email2": "", "address": "Zahradní 282, Libčice nad Vltavou", "zip": "25266", "notes": "", "photos": ["customers/customer_11_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 12, "name": "Radek Pospíšil", "firma": "", "jmeno": "Radek", "prijmeni": "Pospíšil", "prezdivka": "", "phone": "+420 736 755 950", "phone2": "", "email": "", "email2": "", "address": "U Kovárny 75, Zeměchy", "zip": "", "notes": "", "photos": ["customers/customer_12_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 13, "name": "Zákazník 13", "firma": "", "jmeno": "", "prijmeni": "", "prezdivka": "", "phone": "", "phone2": "", "email": "", "email2": "", "address": "", "zip": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 14, "name": "Tereza Kubelková", "firma": "", "jmeno": "Tereza", "prijmeni": "Kubelková", "prezdivka": "", "phone": "+420 604 437 023", "phone2": "", "email": "", "email2": "", "address": "Kladenská 12, Velké Přílepy", "zip": "", "notes": "", "photos": ["customers/customer_14_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" }
     ],
     "locations": [
-      {
-        "id": 1, "customerId": 1,
-        "address": "Žďár 7", "city": "Doksy", "zip": "47201",
-        "floor": "", "access": "", "notes": "moodré okenice",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 2, "customerId": 1,
-        "address": "Třebízského 454", "city": "Kosmonosy", "zip": "29306",
-        "floor": "", "access": "", "notes": "Taťka kotel",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 3, "customerId": 3,
-        "address": "Žďár 1", "city": "Doksy", "zip": "47201",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 4, "customerId": 3,
-        "address": "Žďár 1", "city": "Doksy", "zip": "47201",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 5, "customerId": 4,
-        "address": "Turská 515", "city": "Libčice", "zip": "25266",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 6, "customerId": 4,
-        "address": "Palackého 295", "city": "Libčice nad Vltavou", "zip": "25266",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 7, "customerId": 6,
-        "address": "V Cihelnách 247", "city": "Nelahozeves", "zip": "",
-        "floor": "", "access": "", "notes": "Vaillant turboTEC VUW CZ 242/3-3 R1",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 8, "customerId": 1,
-        "address": "—", "city": "", "zip": "",
-        "floor": "", "access": "", "notes": "Lokace doplnit",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 10, "customerId": 8,
-        "address": "Nádražní 173", "city": "Dolní Beřkovice", "zip": "27701",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 11, "customerId": 9,
-        "address": "K Lesu 564", "city": "Horoměřice", "zip": "",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 12, "customerId": 10,
-        "address": "Letecká 543", "city": "Libčice", "zip": "25266",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 13, "customerId": 11,
-        "address": "Zahradní 282", "city": "Libčice nad Vltavou", "zip": "25266",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 14, "customerId": 12,
-        "address": "U Kovárny 75", "city": "Zeměchy", "zip": "",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 15, "customerId": 13,
-        "address": "Riegrova 99", "city": "Roztoky", "zip": "",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 16, "customerId": 13,
-        "address": "Stržná 49", "city": "Praha Suchdol", "zip": "",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 17, "customerId": 13,
-        "address": "Stržná 51", "city": "Praha Suchdol", "zip": "",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 18, "customerId": 14,
-        "address": "Kladenská 12", "city": "Velké Přílepy", "zip": "",
-        "floor": "", "access": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      }
+      { "id": 1, "customerId": 1, "address": "Žďár 7", "city": "Doksy", "zip": "47201", "floor": "", "access": "", "notes": "moodré okenice", "photos": ["locations/location_1_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 2, "customerId": 1, "address": "Třebízského 454", "city": "Kosmonosy", "zip": "29306", "floor": "", "access": "", "notes": "Taťka kotel", "photos": ["locations/location_2_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 3, "customerId": 3, "address": "Žďár 1", "city": "Doksy", "zip": "47201", "floor": "", "access": "", "notes": "", "photos": ["locations/location_3_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 4, "customerId": 3, "address": "Žďár 1", "city": "Doksy", "zip": "47201", "floor": "", "access": "", "notes": "", "photos": ["locations/location_4_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 5, "customerId": 4, "address": "Turská 515", "city": "Libčice", "zip": "25266", "floor": "", "access": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 6, "customerId": 4, "address": "Palackého 295", "city": "Libčice nad Vltavou", "zip": "25266", "floor": "", "access": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 7, "customerId": 6, "address": "V Cihelnách 247", "city": "Nelahozeves", "zip": "", "floor": "", "access": "", "notes": "Vaillant turboTEC VUW CZ 242/3-3 R1", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 8, "customerId": 1, "address": "—", "city": "", "zip": "", "floor": "", "access": "", "notes": "Lokace doplnit", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 10, "customerId": 8, "address": "Nádražní 173", "city": "Dolní Beřkovice", "zip": "27701", "floor": "", "access": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 11, "customerId": 9, "address": "K Lesu 564", "city": "Horoměřice", "zip": "", "floor": "", "access": "", "notes": "", "photos": ["locations/location_11_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 12, "customerId": 10, "address": "Letecká 543", "city": "Libčice", "zip": "25266", "floor": "", "access": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 13, "customerId": 11, "address": "Zahradní 282", "city": "Libčice nad Vltavou", "zip": "25266", "floor": "", "access": "", "notes": "", "photos": ["locations/location_13_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 14, "customerId": 12, "address": "U Kovárny 75", "city": "Zeměchy", "zip": "", "floor": "", "access": "", "notes": "", "photos": ["locations/location_14_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 15, "customerId": 13, "address": "Riegrova 99", "city": "Roztoky", "zip": "", "floor": "", "access": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 16, "customerId": 13, "address": "Stržná 49", "city": "Praha Suchdol", "zip": "", "floor": "", "access": "", "notes": "", "photos": ["locations/location_16_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 17, "customerId": 13, "address": "Stržná 51", "city": "Praha Suchdol", "zip": "", "floor": "", "access": "", "notes": "", "photos": ["locations/location_17_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 18, "customerId": 14, "address": "Kladenská 12", "city": "Velké Přílepy", "zip": "", "floor": "", "access": "", "notes": "", "photos": ["locations/location_18_0_0.jpg"], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" }
     ],
     "devices": [
-      {
-        "id": 8, "locationId": 8, "customerId": 1,
-        "name": "Xkotel", "type": "Kotel", "model": "", "serial": "", "year": "", "power": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 10, "locationId": 10, "customerId": 8,
-        "name": "Xlednice", "type": "Lednice", "model": "", "serial": "", "year": "", "power": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 11, "locationId": 11, "customerId": 9,
-        "name": "Xvířivka", "type": "Vířivka", "model": "", "serial": "", "year": "", "power": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 12, "locationId": 12, "customerId": 10,
-        "name": "Xraketomet", "type": "Raketomet", "model": "", "serial": "", "year": "", "power": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 13, "locationId": 13, "customerId": 11,
-        "name": "XiPhone", "type": "iPhone", "model": "", "serial": "", "year": "", "power": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      },
-      {
-        "id": 14, "locationId": 14, "customerId": 12,
-        "name": "Xpapiňák", "type": "Papiňák", "model": "", "serial": "", "year": "", "power": "", "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z"
-      }
+      { "id": 8, "locationId": 8, "customerId": 1, "name": "Xkotel", "type": "Kotel", "model": "", "serial": "", "year": "", "power": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 10, "locationId": 10, "customerId": 8, "name": "Xlednice", "type": "Lednice", "model": "", "serial": "", "year": "", "power": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 11, "locationId": 11, "customerId": 9, "name": "Xvířivka", "type": "Vířivka", "model": "", "serial": "", "year": "", "power": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 12, "locationId": 12, "customerId": 10, "name": "Xraketomet", "type": "Raketomet", "model": "", "serial": "", "year": "", "power": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 13, "locationId": 13, "customerId": 11, "name": "XiPhone", "type": "iPhone", "model": "", "serial": "", "year": "", "power": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" },
+      { "id": 14, "locationId": 14, "customerId": 12, "name": "Xpapiňák", "type": "Papiňák", "model": "", "serial": "", "year": "", "power": "", "notes": "", "photos": [], "createdAt": "2025-09-01T00:00:00.000Z", "updatedAt": "2025-09-01T00:00:00.000Z" }
     ],
     "tasks": [
-      {
-        "id": 6,
-        "deviceId": 8, "locationId": 8, "customerId": 1,
-        "date": "2025-09-05",
-        "title": "Výměna Alfalavalu",
-        "status": "nova",
-        "repairType": "Výměna dílu",
-        "description": "",
-        "parts": "",
-        "price": 2857,
-        "hours": 24,
-        "paymentStatus": "",
-        "nextService": "",
-        "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-05T00:00:00.000Z", "updatedAt": "2025-09-05T00:00:00.000Z"
-      },
-      {
-        "id": 7,
-        "deviceId": 14, "locationId": 14, "customerId": 12,
-        "date": "2025-09-16",
-        "title": "Roční kontrola Viadrus G27",
-        "status": "dokoncena",
-        "repairType": "Pravidelná revize",
-        "description": "Roční kontrola Viadrus G27",
-        "parts": "",
-        "price": 900,
-        "hours": null,
-        "paymentStatus": "",
-        "nextService": "",
-        "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-16T00:00:00.000Z", "updatedAt": "2025-09-16T00:00:00.000Z"
-      },
-      {
-        "id": 8,
-        "deviceId": 10, "locationId": 10, "customerId": 8,
-        "date": "2025-09-17",
-        "title": "Spuštění kotle",
-        "status": "probiha",
-        "repairType": "Uvedení do provozu",
-        "description": "Spuštění kotle",
-        "parts": "",
-        "price": null,
-        "hours": null,
-        "paymentStatus": "",
-        "nextService": "",
-        "notes": "Ekviterm, havarijni termostat, pospojeni, revize",
-        "photos": [],
-        "createdAt": "2025-09-17T00:00:00.000Z", "updatedAt": "2025-09-17T00:00:00.000Z"
-      },
-      {
-        "id": 9,
-        "deviceId": 11, "locationId": 11, "customerId": 9,
-        "date": "2025-09-19",
-        "title": "Revize",
-        "status": "dokoncena",
-        "repairType": "Pravidelná revize",
-        "description": "Revize",
-        "parts": "",
-        "price": 1800,
-        "hours": null,
-        "paymentStatus": "",
-        "nextService": "",
-        "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-19T00:00:00.000Z", "updatedAt": "2025-09-19T00:00:00.000Z"
-      },
-      {
-        "id": 10,
-        "deviceId": 10, "locationId": 10, "customerId": 8,
-        "date": "2025-09-22",
-        "title": "Roční servis a výměna ventilu",
-        "status": "dokoncena",
-        "repairType": "Pravidelná revize",
-        "description": "Roční servis a výměna ventilu",
-        "parts": "",
-        "price": 7350,
-        "hours": null,
-        "paymentStatus": "",
-        "nextService": "",
-        "notes": "",
-        "photos": [],
-        "createdAt": "2025-09-22T00:00:00.000Z", "updatedAt": "2025-09-22T00:00:00.000Z"
-      },
-      {
-        "id": 11,
-        "deviceId": 13, "locationId": 13, "customerId": 11,
-        "date": "2025-09-22",
-        "title": "Roční servis",
-        "status": "ceka",
-        "repairType": "Pravidelná revize",
-        "description": "Roční servis",
-        "parts": "",
-        "price": 1900,
-        "hours": null,
-        "paymentStatus": "",
-        "nextService": "",
-        "notes": "Vyměnit ionizační elektrodu",
-        "photos": [],
-        "createdAt": "2025-09-22T00:00:00.000Z", "updatedAt": "2025-09-22T00:00:00.000Z"
-      }
+      { "id": 6, "deviceId": 8, "locationId": 8, "customerId": 1, "date": "2025-09-05", "title": "Výměna Alfalavalu", "status": "nova", "repairType": "Výměna dílu", "description": "", "parts": "", "price": 2857, "hours": 24, "paymentStatus": "", "nextService": "", "notes": "", "photos": [], "createdAt": "2025-09-05T00:00:00.000Z", "updatedAt": "2025-09-05T00:00:00.000Z" },
+      { "id": 7, "deviceId": 14, "locationId": 14, "customerId": 12, "date": "2025-09-16", "title": "Roční kontrola Viadrus G27", "status": "dokoncena", "repairType": "Pravidelná revize", "description": "Roční kontrola Viadrus G27", "parts": "", "price": 900, "hours": null, "paymentStatus": "", "nextService": "", "notes": "", "photos": [], "createdAt": "2025-09-16T00:00:00.000Z", "updatedAt": "2025-09-16T00:00:00.000Z" },
+      { "id": 8, "deviceId": 10, "locationId": 10, "customerId": 8, "date": "2025-09-17", "title": "Spuštění kotle", "status": "probiha", "repairType": "Uvedení do provozu", "description": "Spuštění kotle", "parts": "", "price": null, "hours": null, "paymentStatus": "", "nextService": "", "notes": "Ekviterm, havarijni termostat, pospojeni, revize", "photos": ["tasks/task_8_0_0.jpg"], "createdAt": "2025-09-17T00:00:00.000Z", "updatedAt": "2025-09-17T00:00:00.000Z" },
+      { "id": 9, "deviceId": 11, "locationId": 11, "customerId": 9, "date": "2025-09-19", "title": "Revize", "status": "dokoncena", "repairType": "Pravidelná revize", "description": "Revize", "parts": "", "price": 1800, "hours": null, "paymentStatus": "", "nextService": "", "notes": "", "photos": ["tasks/task_9_0_0.jpg"], "createdAt": "2025-09-19T00:00:00.000Z", "updatedAt": "2025-09-19T00:00:00.000Z" },
+      { "id": 10, "deviceId": 10, "locationId": 10, "customerId": 8, "date": "2025-09-22", "title": "Roční servis a výměna ventilu", "status": "dokoncena", "repairType": "Pravidelná revize", "description": "Roční servis a výměna ventilu", "parts": "", "price": 7350, "hours": null, "paymentStatus": "", "nextService": "", "notes": "", "photos": ["tasks/task_10_0_0.jpg"], "createdAt": "2025-09-22T00:00:00.000Z", "updatedAt": "2025-09-22T00:00:00.000Z" },
+      { "id": 11, "deviceId": 13, "locationId": 13, "customerId": 11, "date": "2025-09-22", "title": "Roční servis", "status": "ceka", "repairType": "Pravidelná revize", "description": "Roční servis", "parts": "", "price": 1900, "hours": null, "paymentStatus": "", "nextService": "", "notes": "Vyměnit ionizační elektrodu", "photos": [], "createdAt": "2025-09-22T00:00:00.000Z", "updatedAt": "2025-09-22T00:00:00.000Z" }
     ]
   }
 }
